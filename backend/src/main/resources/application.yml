@@ -4,12 +4,21 @@ server:
 spring:
   application:
     name: admin-management-system
+  
+  servlet:
+    encoding:
+      enabled: true
+      force: true
+      charset: UTF-8
+  
+  mvc:
+    charset: UTF-8
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/admin_management_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: 20050331lsy
 
 mybatis-plus:
   configuration:
