@@ -59,12 +59,13 @@ public class AdminUserServiceImpl implements AdminUserService {
         LoginLog loginLog = new LoginLog();
         loginLog.setAdminId(adminUser.getId());
         loginLog.setUsername(adminUser.getUsername());
-        loginLog.setLoginStatus(1);
-        loginLog.setIpAddress(ip);
+        loginLog.setLoginIp(ip);
         loginLog.setLoginTime(LocalDateTime.now());
+        loginLog.setCreateTime(LocalDateTime.now());
         loginLogMapper.insert(loginLog);
 
         adminUser.setLastLoginTime(LocalDateTime.now());
+        adminUser.setUpdateTime(LocalDateTime.now());
         adminUserMapper.updateById(adminUser);
 
         return adminUser;

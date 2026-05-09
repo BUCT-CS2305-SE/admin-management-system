@@ -1,6 +1,7 @@
 package com.buct.backend.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -12,12 +13,15 @@ public class Role {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("role_name")
     private String roleName;
 
+    @TableField("role_code")
     private String roleCode;
 
     private String description;
 
+    @TableField("create_time")
     private LocalDateTime createTime;
 
     public Long getId() {

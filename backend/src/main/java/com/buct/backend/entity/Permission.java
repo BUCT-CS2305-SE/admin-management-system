@@ -1,8 +1,11 @@
 package com.buct.backend.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.time.LocalDateTime;
 
 @TableName("permission")
 public class Permission {
@@ -10,13 +13,21 @@ public class Permission {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("permission_name")
     private String permissionName;
 
+    @TableField("permission_code")
     private String permissionCode;
 
-    private String moduleName;
+    private String type;
 
-    private String description;
+    @TableField("parent_id")
+    private Long parentId;
+
+    private Integer sort;
+
+    @TableField("create_time")
+    private LocalDateTime createTime;
 
     public Long getId() {
         return id;
@@ -42,19 +53,35 @@ public class Permission {
         this.permissionCode = permissionCode;
     }
 
-    public String getModuleName() {
-        return moduleName;
+    public String getType() {
+        return type;
     }
 
-    public void setModuleName(String moduleName) {
-        this.moduleName = moduleName;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public String getDescription() {
-        return description;
+    public Long getParentId() {
+        return parentId;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+    }
+
+    public Integer getSort() {
+        return sort;
+    }
+
+    public void setSort(Integer sort) {
+        this.sort = sort;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
     }
 }

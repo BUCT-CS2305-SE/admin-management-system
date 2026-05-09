@@ -17,8 +17,10 @@ public class AdminUser {
 
     private String password;
 
+    @TableField("real_name")
     private String realName;
 
+    @TableField("role_id")
     private Long roleId;
 
     @TableField(exist = false)
@@ -26,10 +28,13 @@ public class AdminUser {
 
     private Integer status;
 
+    @TableField("last_login_time")
     private LocalDateTime lastLoginTime;
 
+    @TableField("create_time")
     private LocalDateTime createTime;
 
+    @TableField("update_time")
     private LocalDateTime updateTime;
 
     public Long getId() {
