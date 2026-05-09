@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS admin_management_system
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_general_ci;
 
-USE admin_management_system;
+USE admin_management_system_lsy;
 
 DROP TABLE IF EXISTS artifact;
 CREATE TABLE artifact (
@@ -164,7 +164,8 @@ CREATE TABLE backup_record (
 INSERT INTO role(role_name, role_code, description) VALUES
 ('超级管理员', 'SUPER_ADMIN', '拥有全部操作权限'),
 ('内容审核员', 'CONTENT_REVIEWER', '仅拥有内容审核相关权限'),
-('数据管理员', 'DATA_ADMIN', '拥有文物数据的增删改查权限');
+('数据管理员', 'DATA_ADMIN', '拥有文物数据的增删改查权限'),
+('普通用户', 'NORMAL_USER', '仅拥有基础查看权限');
 
 INSERT INTO permission(permission_name, permission_code, module_name, description) VALUES
 ('查看文物', 'artifact:view', '文物管理', '查看文物数据'),
@@ -198,6 +199,10 @@ WHERE permission_code IN (
     'artifact:export',
     'dashboard:view'
 );
+
+INSERT INTO role_permission(role_id, permission_id)
+SELECT 4, id FROM permission
+WHERE permission_code IN ('artifact:view', 'dashboard:view');
 
 INSERT INTO admin_user(username, password, real_name, role_id, status) VALUES
 ('admin', '123456', '系统管理员', 1, 1),
@@ -281,3 +286,5 @@ INSERT INTO user_content(
 INSERT INTO sensitive_word(word, status) VALUES
 ('违规词示例', 1),
 ('敏感词示例', 1);
+
+SELECT '数据库初始化完成' AS result;
