@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS `admin_user` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `password` VARCHAR(100) NOT NULL COMMENT '密码',
-    `real_name` VARCHAR(50) COMMENT '真实姓名',
-    `role_id` BIGINT COMMENT '角色ID',
+    `username` VARCHAR(100) NOT NULL UNIQUE COMMENT '用户名',
+    `password` VARCHAR(255) NOT NULL COMMENT '密码',
+    `real_name` VARCHAR(100) COMMENT '真实姓名',
+    `role_id` BIGINT NOT NULL COMMENT '角色ID',
     `status` TINYINT DEFAULT 1 COMMENT '状态：1启用，0禁用',
     `last_login_time` DATETIME COMMENT '最后登录时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -13,23 +13,18 @@ CREATE TABLE IF NOT EXISTS `admin_user` (
 
 CREATE TABLE IF NOT EXISTS `role` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `role_name` VARCHAR(50) NOT NULL COMMENT '角色名称',
-    `role_code` VARCHAR(50) NOT NULL COMMENT '角色编码',
-    `description` VARCHAR(200) COMMENT '角色描述',
-    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_role_name (`role_name`),
-    UNIQUE KEY uk_role_code (`role_code`)
+    `role_name` VARCHAR(100) NOT NULL COMMENT '角色名称',
+    `role_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '角色编码',
+    `description` VARCHAR(255) COMMENT '角色描述',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
 
 CREATE TABLE IF NOT EXISTS `permission` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `permission_name` VARCHAR(100) NOT NULL COMMENT '权限名称',
-    `permission_code` VARCHAR(100) NOT NULL COMMENT '权限编码',
-    `type` VARCHAR(20) COMMENT '权限类型：menu/button',
-    `parent_id` BIGINT DEFAULT 0 COMMENT '父权限ID',
-    `sort` INT DEFAULT 0 COMMENT '排序',
-    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_permission_code (`permission_code`)
+    `permission_code` VARCHAR(100) NOT NULL UNIQUE COMMENT '权限编码',
+    `module_name` VARCHAR(100) NOT NULL COMMENT '模块名称',
+    `description` VARCHAR(255) COMMENT '权限描述'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
 
 CREATE TABLE IF NOT EXISTS `role_permission` (
@@ -58,25 +53,25 @@ INSERT INTO `role` (`id`, `role_name`, `role_code`, `description`, `create_time`
 (3, '数据管理员', 'DATA_ADMIN', '负责文物数据的增删改查', NOW()),
 (4, '普通用户', 'NORMAL_USER', '仅拥有查看权限', NOW());
 
-INSERT INTO `permission` (`id`, `permission_name`, `permission_code`, `type`, `parent_id`, `sort`, `create_time`) VALUES
-(1, '文物管理', 'artifact:manage', 'menu', 0, 1, NOW()),
-(2, '文物查看', 'artifact:view', 'button', 1, 1, NOW()),
-(3, '文物新增', 'artifact:add', 'button', 1, 2, NOW()),
-(4, '文物编辑', 'artifact:edit', 'button', 1, 3, NOW()),
-(5, '文物删除', 'artifact:delete', 'button', 1, 4, NOW()),
-(6, '文物审核', 'artifact:audit', 'button', 1, 5, NOW()),
-(7, '用户管理', 'admin:manage', 'menu', 0, 2, NOW()),
-(8, '用户查看', 'admin:view', 'button', 7, 1, NOW()),
-(9, '用户新增', 'admin:add', 'button', 7, 2, NOW()),
-(10, '用户编辑', 'admin:edit', 'button', 7, 3, NOW()),
-(11, '用户禁用', 'admin:disable', 'button', 7, 4, NOW()),
-(12, '角色管理', 'role:manage', 'menu', 0, 3, NOW()),
-(13, '角色查看', 'role:view', 'button', 12, 1, NOW()),
-(14, '角色权限分配', 'role:assign', 'button', 12, 2, NOW()),
-(15, '权限管理', 'permission:manage', 'menu', 0, 4, NOW()),
-(16, '权限查看', 'permission:view', 'button', 15, 1, NOW()),
-(17, '登录日志', 'log:manage', 'menu', 0, 5, NOW()),
-(18, '日志查看', 'log:view', 'button', 17, 1, NOW());
+INSERT INTO `permission` (`id`, `permission_name`, `permission_code`, `module_name`, `description`) VALUES
+(1, '文物管理', 'artifact:manage', '文物管理', '文物管理模块权限'),
+(2, '文物查看', 'artifact:view', '文物管理', '查看文物列表'),
+(3, '文物新增', 'artifact:add', '文物管理', '新增文物'),
+(4, '文物编辑', 'artifact:edit', '文物管理', '编辑文物'),
+(5, '文物删除', 'artifact:delete', '文物管理', '删除文物'),
+(6, '文物审核', 'artifact:audit', '文物管理', '审核文物'),
+(7, '用户管理', 'admin:manage', '用户管理', '用户管理模块权限'),
+(8, '用户查看', 'admin:view', '用户管理', '查看用户列表'),
+(9, '用户新增', 'admin:add', '用户管理', '新增用户'),
+(10, '用户编辑', 'admin:edit', '用户管理', '编辑用户'),
+(11, '用户禁用', 'admin:disable', '用户管理', '禁用用户'),
+(12, '角色管理', 'role:manage', '角色管理', '角色管理模块权限'),
+(13, '角色查看', 'role:view', '角色管理', '查看角色列表'),
+(14, '角色权限分配', 'role:assign', '角色管理', '分配角色权限'),
+(15, '权限管理', 'permission:manage', '权限管理', '权限管理模块权限'),
+(16, '权限查看', 'permission:view', '权限管理', '查看权限列表'),
+(17, '登录日志', 'log:manage', '日志管理', '日志管理模块权限'),
+(18, '日志查看', 'log:view', '日志管理', '查看登录日志');
 
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),

@@ -18,14 +18,17 @@ public class LoginLog {
 
     private String username;
 
-    @TableField("login_ip")
-    private String loginIp;
+    @TableField("login_status")
+    private Integer loginStatus;
+
+    @TableField("ip_address")
+    private String ipAddress;
+
+    @TableField("fail_reason")
+    private String failReason;
 
     @TableField("login_time")
     private LocalDateTime loginTime;
-
-    @TableField("create_time")
-    private LocalDateTime createTime;
 
     public Long getId() {
         return id;
@@ -51,12 +54,28 @@ public class LoginLog {
         this.username = username;
     }
 
-    public String getLoginIp() {
-        return loginIp;
+    public Integer getLoginStatus() {
+        return loginStatus;
     }
 
-    public void setLoginIp(String loginIp) {
-        this.loginIp = loginIp;
+    public void setLoginStatus(Integer loginStatus) {
+        this.loginStatus = loginStatus;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public String getFailReason() {
+        return failReason;
+    }
+
+    public void setFailReason(String failReason) {
+        this.failReason = failReason;
     }
 
     public LocalDateTime getLoginTime() {
@@ -65,13 +84,5 @@ public class LoginLog {
 
     public void setLoginTime(LocalDateTime loginTime) {
         this.loginTime = loginTime;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
     }
 }
