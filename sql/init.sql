@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS admin_management_system
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_general_ci;
 
-USE admin_management_system_lsy;
+USE admin_management_system;
 
 DROP TABLE IF EXISTS artifact;
 CREATE TABLE artifact (
