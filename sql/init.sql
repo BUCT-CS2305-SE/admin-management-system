@@ -92,7 +92,7 @@ CREATE TABLE platform_user (
     nickname VARCHAR(50) DEFAULT '' COMMENT '用户昵称',
     source VARCHAR(50) NOT NULL DEFAULT 'WEB' COMMENT '用户来源：WEB或APP',
     status TINYINT NOT NULL DEFAULT 1 COMMENT '账号状态：0禁用，1启用',
-    an_comment TINYINT NOT NULL DEFAULT 0 COMMENT '是否禁止评论：0否，1是',
+    ban_comment TINYINT NOT NULL DEFAULT 0 COMMENT '是否禁止评论：0否，1是',
     ban_upload TINYINT NOT NULL DEFAULT 0 COMMENT '是否禁止上传：0否，1是',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
@@ -268,9 +268,11 @@ INSERT INTO artifact(
     0
 );
 
-INSERT INTO platform_user(username, email, phone, avatar, source, status, comment_banned, upload_banned) VALUES
-('web_user_01', 'webuser01@example.com', '13800000001', '', 'WEB', 1, 0, 0),
-('app_user_01', 'appuser01@example.com', '13800000002', '', 'APP', 1, 0, 0);
+INSERT INTO platform_user(
+    username, email, phone, avatar, source, status, ban_comment, ban_upload
+) VALUES
+      ('web_user_01', 'webuser01@example.com', '13800000001', '', 'WEB', 1, 0, 0),
+      ('app_user_01', 'appuser01@example.com', '13800000002', '', 'APP', 1, 0, 0);
 
 INSERT INTO user_content(
     user_id,

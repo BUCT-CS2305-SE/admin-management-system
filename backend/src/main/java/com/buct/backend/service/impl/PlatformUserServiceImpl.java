@@ -1,31 +1,50 @@
 package com.buct.backend.service.impl;
 
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.buct.backend.common.PageResult;
 import com.buct.backend.dto.PlatformUserQueryDTO;
 import com.buct.backend.entity.PlatformUser;
+import com.buct.backend.entity.UserContent;
 import com.buct.backend.mapper.PlatformUserMapper;
+import com.buct.backend.mapper.UserContentMapper;
 import com.buct.backend.service.PlatformUserService;
-import com.buct.backend.common.PageResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, PlatformUser>
-        implements PlatformUserService {
+public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, PlatformUser> implements PlatformUserService {
+
+    @Autowired
+    private UserContentMapper userContentMapper;
 
     @Override
     public PageResult<PlatformUser> page(PlatformUserQueryDTO dto) {
-        QueryWrapper<PlatformUser> qw = new QueryWrapper<>();
-        qw.like(StrUtil.isNotBlank(dto.getUsername()), "username", dto.getUsername());
-        qw.eq(StrUtil.isNotBlank(dto.getSource()), "source", dto.getSource());
-        qw.eq(dto.getStatus() != null, "status", dto.getStatus());
-        qw.eq(dto.getBanComment() != null, "ban_comment", dto.getBanComment());
-        qw.eq(dto.getBanUpload() != null, "ban_upload", dto.getBanUpload());
-        qw.orderByDesc("create_time");
+        Page<PlatformUser> page = new Page<>(dto.getPageNum(), dto.getPageSize());
 
-        Page<PlatformUser> page = this.page(new Page<>(dto.getPageNum(), dto.getPageSize()), qw);
-        return PageResult.of(page.getRecords(), page.getTotal(), page.getSize(), page.getCurrent());
+        LambdaQueryWrapper<PlatformUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(dto.getUsername() != null, PlatformUser::getUsername, dto.getUsername());
+        wrapper.eq(dto.getSource() != null, PlatformUser::getSource, dto.getSource());
+        wrapper.eq(dto.getStatus() != null, PlatformUser::getStatus, dto.getStatus());
+
+        page(page, wrapper);
+
+        return PageResult.of(
+                page.getRecords(),
+                page.getTotal(),
+                page.getCurrent(),
+                page.getSize()
+        );
+    }
+
+    @Override
+    public List<UserContent> getUserContents(Long userId) {
+        LambdaQueryWrapper<UserContent> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserContent::getUserId, userId);
+        wrapper.orderByDesc(UserContent::getSubmitTime);
+        return userContentMapper.selectList(wrapper);
     }
 }
