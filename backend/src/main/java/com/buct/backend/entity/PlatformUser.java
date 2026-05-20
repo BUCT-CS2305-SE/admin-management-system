@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 public class PlatformUser {
     private Long id;
     private String username;
-    private String nickname;
     private String phone;
     private String email;
     private String avatar;
