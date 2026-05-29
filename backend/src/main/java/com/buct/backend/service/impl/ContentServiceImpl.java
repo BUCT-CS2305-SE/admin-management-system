@@ -1,0 +1,87 @@
+package com.buct.backend.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.buct.backend.dto.ContentQueryDTO;
+import com.buct.backend.dto.ContentRejectDTO;
+import com.buct.backend.entity.UserContent;
+import com.buct.backend.mapper.UserContentMapper;
+import com.buct.backend.common.BusinessException;
+import com.buct.backend.common.PageResult;
+import com.buct.backend.service.ContentService;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+public class ContentServiceImpl implements ContentService {
+
+    private final UserContentMapper mapper;
+
+    public ContentServiceImpl(UserContentMapper mapper) {
+        this.mapper = mapper;
+    }
+
+    @Override
+    public PageResult<UserContent> pageList(ContentQueryDTO dto) {
+        Page<UserContent> page = new Page<>(dto.getPageNum(), dto.getPageSize());
+        LambdaQueryWrapper<UserContent> qw = new LambdaQueryWrapper<>();
+
+        if (dto.getContentType() != null) {
+            qw.eq(UserContent::getContentType, dto.getContentType());
+        }
+        if (dto.getSource() != null) {
+            qw.eq(UserContent::getSource, dto.getSource());
+        }
+        if (dto.getAuditStatus() != null) {
+            qw.eq(UserContent::getAuditStatus, dto.getAuditStatus());
+        }
+        if (dto.getUserId() != null) {
+            qw.eq(UserContent::getUserId, dto.getUserId());
+        }
+
+        // 用ID排序，绝对不报错
+        qw.orderByDesc(UserContent::getId);
+
+        Page<UserContent> result = mapper.selectPage(page, qw);
+        return new PageResult<>(result.getRecords(), result.getTotal(), result.getCurrent(), result.getSize());
+    }
+
+    @Override
+    public UserContent getById(Long id) {
+        UserContent content = mapper.selectById(id);
+        if (content == null) {
+            throw new BusinessException("内容不存在");
+        }
+        return content;
+    }
+
+    @Override
+    public void approve(Long id) {
+        UserContent content = getById(id);
+        content.setAuditStatus(1);
+        content.setAuditTime(LocalDateTime.now());
+        mapper.updateById(content);
+    }
+
+    @Override
+    public void reject(Long id, ContentRejectDTO dto) {
+        UserContent content = getById(id);
+        content.setAuditStatus(2);
+        content.setRejectReason(dto.getRejectReason());
+        content.setAuditTime(LocalDateTime.now());
+        mapper.updateById(content);
+    }
+
+    @Override
+    public void recheck(Long id) {
+        UserContent content = getById(id);
+        content.setAuditStatus(3);
+        mapper.updateById(content);
+    }
+
+    @Override
+    public void delete(Long id) {
+        mapper.deleteById(id);
+    }
+}

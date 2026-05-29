@@ -31,6 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
+        e.printStackTrace();
         return Result.error("系统异常：" + e.getMessage());
     }
 }

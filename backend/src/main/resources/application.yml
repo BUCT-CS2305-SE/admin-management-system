@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: admin-management-system
+  
+  servlet:
+    encoding:
+      enabled: true
+      force: true
+      charset: UTF-8
+  
+  mvc:
+    charset: UTF-8
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
