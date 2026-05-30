@@ -2,6 +2,8 @@ package com.buct.backend.controller;
 
 import com.buct.backend.dto.ContentQueryDTO;
 import com.buct.backend.dto.ContentRejectDTO;
+import com.buct.backend.dto.BatchIdsDTO;
+import com.buct.backend.dto.BatchRejectDTO;
 import com.buct.backend.entity.UserContent;
 import com.buct.backend.common.PageResult;
 import com.buct.backend.common.Result;
@@ -48,6 +50,18 @@ public class ContentController {
     @PutMapping("/{id}/recheck")
     public Result<Void> recheck(@PathVariable Long id) {
         service.recheck(id);
+        return Result.success();
+    }
+
+    @PutMapping("/batch/approve")
+    public Result<Void> batchApprove(@RequestBody BatchIdsDTO dto) {
+        service.batchApprove(dto.getIds());
+        return Result.success();
+    }
+
+    @PutMapping("/batch/reject")
+    public Result<Void> batchReject(@RequestBody BatchRejectDTO dto) {
+        service.batchReject(dto.getIds(), dto.getRejectReason());
         return Result.success();
     }
 

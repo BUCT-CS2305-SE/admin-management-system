@@ -5,6 +5,8 @@ import com.buct.backend.dto.ContentRejectDTO;
 import com.buct.backend.entity.UserContent;
 import com.buct.backend.common.PageResult;
 
+import java.util.List;
+
 public interface ContentService {
     // 分页查询
     PageResult<UserContent> pageList(ContentQueryDTO dto);
@@ -23,4 +25,8 @@ public interface ContentService {
 
     // 删除
     void delete(Long id);
+
+    void batchApprove(List<Long> ids);
+
+    void batchReject(List<Long> ids, String rejectReason);
 }
