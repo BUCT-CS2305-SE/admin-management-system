@@ -1,9 +1,14 @@
 package com.buct.backend.controller;
 
+import com.buct.backend.common.AuthContext;
+import com.buct.backend.common.AuthUser;
+import com.buct.backend.common.AuthUserType;
 import com.buct.backend.common.Result;
 import com.buct.backend.dto.LoginDTO;
+import com.buct.backend.dto.LoginResponseDTO;
 import com.buct.backend.entity.AdminUser;
 import com.buct.backend.service.AdminUserService;
+import com.buct.backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,21 +22,31 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AdminUserService adminUserService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(AdminUserService adminUserService) {
+    public AuthController(AdminUserService adminUserService, JwtUtil jwtUtil) {
         this.adminUserService = adminUserService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/login")
-    public Result<AdminUser> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+    public Result<LoginResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         String ip = getClientIp(request);
         AdminUser adminUser = adminUserService.login(loginDTO, ip);
-        return Result.success(adminUser);
+        AuthUser authUser = new AuthUser(adminUser.getId(), adminUser.getUsername(), AuthUserType.ADMIN, adminUser.getRoleId());
+
+        LoginResponseDTO response = new LoginResponseDTO();
+        response.setToken(jwtUtil.createToken(authUser));
+        response.setTokenType("Bearer");
+        response.setUserType(AuthUserType.ADMIN);
+        response.setExpireAt(jwtUtil.getExpireAt());
+        response.setAdminUser(adminUser);
+        return Result.success(response);
     }
 
     @GetMapping("/profile")
     public Result<AdminUser> getProfile() {
-        AdminUser adminUser = adminUserService.getProfile(1L);
+        AdminUser adminUser = adminUserService.getProfile(AuthContext.getCurrentUserId());
         return Result.success(adminUser);
     }
 

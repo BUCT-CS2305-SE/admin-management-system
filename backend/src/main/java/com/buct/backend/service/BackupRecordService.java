@@ -10,4 +10,8 @@ public interface BackupRecordService {
     PageResult<BackupRecord> getBackups(BackupQueryDTO queryDTO);
 
     BackupRecord createBackup(BackupSaveDTO saveDTO);
+
+    BackupRecord getBackup(Long id);
+
+    BackupRecord restoreBackup(Long id);
 }

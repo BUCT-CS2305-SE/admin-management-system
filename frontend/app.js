@@ -1,6 +1,7 @@
 const state = {
   view: "dashboard",
   currentAdmin: null,
+  token: localStorage.getItem("adminToken") || "",
   selectedRoleId: null,
   roles: [],
   permissions: [],
@@ -27,17 +28,41 @@ function apiBase() {
 }
 
 async function request(path, options = {}) {
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+    ...(options.headers || {}),
+  };
   const response = await fetch(`${apiBase()}${path}`, {
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const result = await response.json();
+  if (response.status === 401) {
+    logout();
+    throw new Error(result.message || "请重新登录");
+  }
+  if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
   if (result.code !== 200) throw new Error(result.message || "接口返回失败");
   return result.data;
+}
+
+async function download(path, filename) {
+  const response = await fetch(`${apiBase()}${path}`, {
+    headers: {
+      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+    },
+  });
+  if (!response.ok) throw new Error(`下载失败：HTTP ${response.status}`);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function qs(params) {
@@ -113,17 +138,24 @@ function numberOrNull(value) {
   return value === "" || value === null || value === undefined ? null : Number(value);
 }
 
+function checkedIds(selector) {
+  return $$(selector).filter((item) => item.checked).map((item) => Number(item.value));
+}
+
 async function login(event) {
   event.preventDefault();
   $("#loginMessage").textContent = "";
   try {
-    const admin = await request("/api/admin/auth/login", {
+    const loginResult = await request("/api/admin/auth/login", {
       method: "POST",
       body: JSON.stringify({
         username: $("#loginUsername").value.trim(),
         password: $("#loginPassword").value,
       }),
     });
+    state.token = loginResult.token;
+    localStorage.setItem("adminToken", loginResult.token);
+    const admin = loginResult.adminUser;
     state.currentAdmin = admin;
     $("#operatorName").textContent = admin.realName || admin.username;
     $("#loginScreen").classList.add("hidden");
@@ -136,6 +168,8 @@ async function login(event) {
 
 function logout() {
   state.currentAdmin = null;
+  state.token = "";
+  localStorage.removeItem("adminToken");
   $("#appScreen").classList.add("hidden");
   $("#loginScreen").classList.remove("hidden");
 }
@@ -337,6 +371,7 @@ async function loadPlatformUsers() {
   })}`);
   $("#platformUserTable").innerHTML = records(data).map((user) => `
     <tr>
+      <td><input type="checkbox" class="platform-user-check" value="${user.id}"></td>
       <td>${user.id}</td>
       <td><strong>${escapeHtml(user.username)}</strong></td>
       <td>${escapeHtml(user.phone || "-")}<br><span class="hint">${escapeHtml(user.email || "-")}</span></td>
@@ -350,7 +385,21 @@ async function loadPlatformUsers() {
         <button class="secondary" onclick="viewPlatformContents(${user.id})">内容</button>
       </td>
     </tr>
-  `).join("") || `<tr><td colspan="7">暂无用户</td></tr>`;
+  `).join("") || `<tr><td colspan="8">暂无用户</td></tr>`;
+}
+
+async function batchPlatformUsers(type) {
+  const ids = checkedIds(".platform-user-check");
+  if (!ids.length) return showAlert("请先勾选用户", "error");
+  const actions = {
+    status: ["/api/admin/platform-users/batch/status", { ids, status: 0 }, "已批量禁用用户"],
+    banComment: ["/api/admin/platform-users/batch/ban-comment", { ids, banComment: 1 }, "已批量禁止评论"],
+    banUpload: ["/api/admin/platform-users/batch/ban-upload", { ids, banUpload: 1 }, "已批量禁止上传"],
+  };
+  const [path, body, message] = actions[type];
+  await request(path, { method: "PUT", body: JSON.stringify(body) });
+  showAlert(message);
+  await loadPlatformUsers();
 }
 
 async function togglePlatformStatus(id, status) {
@@ -470,8 +519,55 @@ function renderRoles() {
       <div class="role-permissions">
         ${renderRolePermissionBadges(role.id)}
       </div>
+      <div class="actions inline-actions">
+        <button onclick="event.stopPropagation(); openRoleEdit(${role.id})">编辑</button>
+        <button class="secondary" onclick="event.stopPropagation(); deleteRole(${role.id})">删除</button>
+      </div>
     </article>
   `).join("") || `<p class="hint">暂无角色</p>`;
+}
+
+function roleForm(role = {}) {
+  return `
+    <div class="form-grid">
+      <label>角色名称<input name="roleName" value="${escapeHtml(role.roleName || "")}" required></label>
+      <label>角色编码<input name="roleCode" value="${escapeHtml(role.roleCode || "")}" required></label>
+      <label class="wide">角色说明<textarea name="description">${escapeHtml(role.description || "")}</textarea></label>
+    </div>
+  `;
+}
+
+function rolePayload(form) {
+  return {
+    roleName: formValue(form, "roleName"),
+    roleCode: formValue(form, "roleCode"),
+    description: formValue(form, "description"),
+  };
+}
+
+function openRoleCreate() {
+  openForm("新增角色", roleForm(), async (form) => {
+    await request("/api/admin/roles", { method: "POST", body: JSON.stringify(rolePayload(form)) });
+    showAlert("角色已新增");
+    await loadRoles();
+  });
+}
+
+function openRoleEdit(id) {
+  const role = state.roles.find((item) => Number(item.id) === Number(id));
+  openForm("编辑角色", roleForm(role), async (form) => {
+    await request(`/api/admin/roles/${id}`, { method: "PUT", body: JSON.stringify(rolePayload(form)) });
+    showAlert("角色已更新");
+    await loadRoles();
+  });
+}
+
+async function deleteRole(id) {
+  if (!confirm("确定删除该角色吗？内置角色不允许删除。")) return;
+  await request(`/api/admin/roles/${id}`, { method: "DELETE" });
+  showAlert("角色已删除");
+  if (Number(state.selectedRoleId) === Number(id)) state.selectedRoleId = null;
+  await loadRoles();
 }
 
 function renderRolePermissionBadges(roleId) {
@@ -532,6 +628,7 @@ async function loadContent() {
   })}`);
   $("#contentTable").innerHTML = records(data).map((item) => `
     <tr>
+      <td><input type="checkbox" class="content-check" value="${item.id}"></td>
       <td>${item.id}</td>
       <td>${item.userId}</td>
       <td>${escapeHtml(item.contentType)}</td>
@@ -545,7 +642,26 @@ async function loadContent() {
         <button class="secondary" onclick="deleteContent(${item.id})">删除</button>
       </td>
     </tr>
-  `).join("") || `<tr><td colspan="7">暂无内容</td></tr>`;
+  `).join("") || `<tr><td colspan="8">暂无内容</td></tr>`;
+}
+
+async function batchApproveContents() {
+  const ids = checkedIds(".content-check");
+  if (!ids.length) return showAlert("请先勾选内容", "error");
+  await request("/api/admin/content/audit/batch/approve", { method: "PUT", body: JSON.stringify({ ids }) });
+  showAlert("已批量通过内容");
+  await loadContent();
+  await loadDashboard();
+}
+
+async function batchRejectContents() {
+  const ids = checkedIds(".content-check");
+  if (!ids.length) return showAlert("请先勾选内容", "error");
+  const rejectReason = prompt("请输入批量拒绝原因", "内容不符合平台要求");
+  if (!rejectReason) return;
+  await request("/api/admin/content/audit/batch/reject", { method: "PUT", body: JSON.stringify({ ids, rejectReason }) });
+  showAlert("已批量拒绝内容");
+  await loadContent();
 }
 
 async function approveContent(id) {
@@ -641,9 +757,10 @@ async function deleteWord(id) {
 }
 
 async function loadLogs() {
-  const [loginLogs, backups] = await Promise.all([
+  const [loginLogs, backups, operationLogs] = await Promise.all([
     request("/api/admin/logs/login/page?pageNum=1&pageSize=50"),
     request("/api/admin/backups/page?pageNum=1&pageSize=50"),
+    request("/api/admin/logs/operations/page?pageNum=1&pageSize=50"),
   ]);
   $("#loginLogTable").innerHTML = records(loginLogs).map((log) => `
     <tr>
@@ -662,8 +779,22 @@ async function loadLogs() {
       <td>${escapeHtml(item.filePath || "-")}</td>
       <td>${badge(item.status, {0: "失败", 1: "成功"})}</td>
       <td>${fmt(item.createTime)}</td>
+      <td class="actions">
+        <button onclick="restoreBackup(${item.id})">恢复</button>
+        <button class="secondary" onclick="downloadBackup(${item.id})">下载</button>
+      </td>
     </tr>
-  `).join("") || `<tr><td colspan="6">暂无备份记录</td></tr>`;
+  `).join("") || `<tr><td colspan="7">暂无备份记录</td></tr>`;
+  $("#operationLogTable").innerHTML = records(operationLogs).map((log) => `
+    <tr>
+      <td>${log.id}</td>
+      <td>${escapeHtml(log.adminUsername || "-")}</td>
+      <td>${escapeHtml(log.moduleName || "-")}</td>
+      <td>${escapeHtml(log.operationType || "-")}</td>
+      <td>${escapeHtml(log.targetType || "-")} #${escapeHtml(log.targetId || "-")}</td>
+      <td>${fmt(log.operationTime)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="6">暂无操作日志</td></tr>`;
 }
 
 function backupForm() {
@@ -688,6 +819,58 @@ function openBackupCreate() {
     });
     showAlert("备份记录已创建");
     await loadLogs();
+  });
+}
+
+async function restoreBackup(id) {
+  if (!confirm("恢复操作会记录审计日志。当前为验收演示恢复，确认继续？")) return;
+  await request(`/api/admin/backups/${id}/restore`, { method: "POST" });
+  showAlert("备份恢复操作已记录");
+}
+
+async function downloadBackup(id) {
+  await download(`/api/admin/backups/${id}/download`, `backup-${id}.sql`);
+  showAlert("备份文件已下载");
+}
+
+async function exportArtifacts() {
+  await download(`/api/admin/artifacts/export-csv?${qs({
+    title: $("#artifactTitle")?.value,
+    type: $("#artifactType")?.value,
+    museum: $("#artifactMuseum")?.value,
+  })}`, "artifacts.csv");
+  showAlert("文物CSV已导出");
+}
+
+function openArtifactImport() {
+  openForm("JSON批量导入文物", `
+    <label>JSON数组<textarea name="json" class="large-textarea" required>[
+  {
+    "objectId": "import_${Date.now()}",
+    "title": "导入演示文物",
+    "period": "明代",
+    "type": "陶瓷",
+    "material": "瓷",
+    "description": "用于验收展示的批量导入数据。",
+    "dimensions": "高10cm",
+    "museum": "海外博物馆",
+    "location": "海外",
+    "detailUrl": "https://example.com/detail",
+    "imageUrl": "https://example.com/image.jpg",
+    "imagePath": "images/import-demo.jpg",
+    "creditLine": "Open Access",
+    "accessionNumber": "IMPORT-001",
+    "crawlDate": "2026-05-29",
+    "auditStatus": 1,
+    "kgSyncStatus": 0
+  }
+]</textarea></label>
+  `, async (form) => {
+    const payload = JSON.parse(formValue(form, "json"));
+    const count = await request("/api/admin/artifacts/import-json", { method: "POST", body: JSON.stringify(payload) });
+    showAlert(`已导入 ${count} 条文物`);
+    await loadArtifacts();
+    await loadDashboard();
   });
 }
 
@@ -716,12 +899,22 @@ function bind() {
     loadArtifacts();
   });
   $("#openArtifactCreate").addEventListener("click", openArtifactCreate);
+  $("#openArtifactImport").addEventListener("click", openArtifactImport);
+  $("#exportArtifacts").addEventListener("click", () => exportArtifacts().catch((error) => showAlert(error.message, "error")));
 
   $("#queryPlatformUsers").addEventListener("click", loadPlatformUsers);
+  $("#checkAllPlatformUsers").addEventListener("change", (event) => $$(".platform-user-check").forEach((item) => item.checked = event.target.checked));
+  $("#batchDisableUsers").addEventListener("click", () => batchPlatformUsers("status").catch((error) => showAlert(error.message, "error")));
+  $("#batchBanComment").addEventListener("click", () => batchPlatformUsers("banComment").catch((error) => showAlert(error.message, "error")));
+  $("#batchBanUpload").addEventListener("click", () => batchPlatformUsers("banUpload").catch((error) => showAlert(error.message, "error")));
   $("#queryAdminUsers").addEventListener("click", loadAdminUsers);
   $("#openAdminCreate").addEventListener("click", openAdminCreate);
+  $("#openRoleCreate").addEventListener("click", openRoleCreate);
   $("#saveRolePermissions").addEventListener("click", () => saveRolePermissions().catch((error) => showAlert(error.message, "error")));
   $("#queryContents").addEventListener("click", loadContent);
+  $("#checkAllContents").addEventListener("change", (event) => $$(".content-check").forEach((item) => item.checked = event.target.checked));
+  $("#batchApproveContents").addEventListener("click", () => batchApproveContents().catch((error) => showAlert(error.message, "error")));
+  $("#batchRejectContents").addEventListener("click", () => batchRejectContents().catch((error) => showAlert(error.message, "error")));
   $("#queryWords").addEventListener("click", loadSensitiveWords);
   $("#openWordCreate").addEventListener("click", openWordCreate);
   $("#openBackupCreate").addEventListener("click", openBackupCreate);
@@ -740,10 +933,14 @@ Object.assign(window, {
   openAdminEdit,
   toggleAdminStatus,
   selectRole,
+  openRoleEdit,
+  deleteRole,
   approveContent,
   rejectContent,
   recheckContent,
   deleteContent,
   openWordEdit,
   deleteWord,
+  restoreBackup,
+  downloadBackup,
 });

@@ -2,6 +2,7 @@ package com.buct.backend.controller;
 
 import com.buct.backend.common.PageResult;
 import com.buct.backend.common.Result;
+import com.buct.backend.dto.BatchPlatformUserStatusDTO;
 import com.buct.backend.dto.PlatformUserQueryDTO;
 import com.buct.backend.entity.PlatformUser;
 import com.buct.backend.entity.UserContent;
@@ -58,6 +59,24 @@ public class PlatformUserController {
         user.setId(id);
         user.setBanUpload(param.get("banUpload"));
         platformUserService.updateById(user);
+        return Result.success();
+    }
+
+    @PutMapping("/batch/status")
+    public Result<Void> batchStatus(@RequestBody BatchPlatformUserStatusDTO dto) {
+        platformUserService.batchUpdateStatus(dto.getIds(), dto.getStatus());
+        return Result.success();
+    }
+
+    @PutMapping("/batch/ban-comment")
+    public Result<Void> batchBanComment(@RequestBody BatchPlatformUserStatusDTO dto) {
+        platformUserService.batchUpdateBanComment(dto.getIds(), dto.getBanComment());
+        return Result.success();
+    }
+
+    @PutMapping("/batch/ban-upload")
+    public Result<Void> batchBanUpload(@RequestBody BatchPlatformUserStatusDTO dto) {
+        platformUserService.batchUpdateBanUpload(dto.getIds(), dto.getBanUpload());
         return Result.success();
     }
 

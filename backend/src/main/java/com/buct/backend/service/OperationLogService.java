@@ -7,4 +7,6 @@ import com.buct.backend.entity.OperationLog;
 public interface OperationLogService {
 
     PageResult<OperationLog> getOperationLogs(LogQueryDTO queryDTO);
+
+    void record(String moduleName, String operationType, String targetType, String targetId, String beforeData, String afterData);
 }

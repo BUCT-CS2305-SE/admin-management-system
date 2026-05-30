@@ -5,6 +5,8 @@ import com.buct.backend.dto.ArtifactQueryDTO;
 import com.buct.backend.dto.ArtifactSaveDTO;
 import com.buct.backend.entity.Artifact;
 
+import java.util.List;
+
 public interface ArtifactService {
 
     PageResult<Artifact> pageArtifacts(ArtifactQueryDTO queryDTO);
@@ -16,4 +18,8 @@ public interface ArtifactService {
     void updateArtifact(Long id, ArtifactSaveDTO saveDTO);
 
     void deleteArtifact(Long id);
+
+    int importArtifacts(List<ArtifactSaveDTO> artifacts);
+
+    String exportArtifactsCsv(ArtifactQueryDTO queryDTO);
 }

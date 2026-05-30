@@ -10,17 +10,22 @@ import com.buct.backend.dto.ArtifactSaveDTO;
 import com.buct.backend.entity.Artifact;
 import com.buct.backend.mapper.ArtifactMapper;
 import com.buct.backend.service.ArtifactService;
+import com.buct.backend.service.OperationLogService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 public class ArtifactServiceImpl implements ArtifactService {
 
     private final ArtifactMapper artifactMapper;
+    private final OperationLogService operationLogService;
 
-    public ArtifactServiceImpl(ArtifactMapper artifactMapper) {
+    public ArtifactServiceImpl(ArtifactMapper artifactMapper, OperationLogService operationLogService) {
         this.artifactMapper = artifactMapper;
+        this.operationLogService = operationLogService;
     }
 
     @Override
@@ -62,6 +67,7 @@ public class ArtifactServiceImpl implements ArtifactService {
         BeanUtils.copyProperties(saveDTO, artifact);
         fillDefaultStatus(artifact);
         artifactMapper.insert(artifact);
+        operationLogService.record("文物数据管理", "新增文物", "artifact", String.valueOf(artifact.getId()), null, artifact.getObjectId());
     }
 
     @Override
@@ -77,6 +83,7 @@ public class ArtifactServiceImpl implements ArtifactService {
         artifact.setId(id);
         fillDefaultStatus(artifact);
         artifactMapper.updateById(artifact);
+        operationLogService.record("文物数据管理", "修改文物", "artifact", String.valueOf(id), existing.getObjectId(), artifact.getObjectId());
     }
 
     @Override
@@ -86,6 +93,46 @@ public class ArtifactServiceImpl implements ArtifactService {
             throw new BusinessException("文物不存在，无法删除");
         }
         artifactMapper.deleteById(id);
+        operationLogService.record("文物数据管理", "删除文物", "artifact", String.valueOf(id), existing.getObjectId(), null);
+    }
+
+    @Override
+    public int importArtifacts(List<ArtifactSaveDTO> artifacts) {
+        if (artifacts == null || artifacts.isEmpty()) {
+            throw new BusinessException("导入数据不能为空");
+        }
+        int count = 0;
+        for (ArtifactSaveDTO artifact : artifacts) {
+            addArtifact(artifact);
+            count++;
+        }
+        operationLogService.record("文物数据管理", "批量导入文物", "artifact", "batch", null, "count=" + count);
+        return count;
+    }
+
+    @Override
+    public String exportArtifactsCsv(ArtifactQueryDTO queryDTO) {
+        queryDTO.setPageNum(1L);
+        queryDTO.setPageSize(100L);
+        List<Artifact> artifacts = pageArtifacts(queryDTO).getRecords();
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("id,objectId,title,period,type,material,museum,location,auditStatus,kgSyncStatus,crawlDate\n");
+        for (Artifact artifact : artifacts) {
+            csv.append(value(artifact.getId())).append(',')
+                    .append(value(artifact.getObjectId())).append(',')
+                    .append(value(artifact.getTitle())).append(',')
+                    .append(value(artifact.getPeriod())).append(',')
+                    .append(value(artifact.getType())).append(',')
+                    .append(value(artifact.getMaterial())).append(',')
+                    .append(value(artifact.getMuseum())).append(',')
+                    .append(value(artifact.getLocation())).append(',')
+                    .append(value(artifact.getAuditStatus())).append(',')
+                    .append(value(artifact.getKgSyncStatus())).append(',')
+                    .append(value(artifact.getCrawlDate())).append('\n');
+        }
+        operationLogService.record("文物数据管理", "导出文物CSV", "artifact", "export", null, "count=" + artifacts.size());
+        return csv.toString();
     }
 
     private void checkObjectIdUnique(String objectId, Long currentId) {
@@ -116,5 +163,10 @@ public class ArtifactServiceImpl implements ArtifactService {
             return 10;
         }
         return Math.min(pageSize, 100);
+    }
+
+    private String value(Object raw) {
+        String text = raw == null ? "" : String.valueOf(raw);
+        return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 }

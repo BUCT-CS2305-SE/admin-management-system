@@ -103,6 +103,8 @@
           <button id="queryArtifacts">查询</button>
           <button id="clearArtifactQuery" class="secondary">清空</button>
           <button id="openArtifactCreate">新增文物</button>
+          <button id="openArtifactImport" class="secondary">JSON导入</button>
+          <button id="exportArtifacts" class="secondary">导出CSV</button>
         </div>
         <section class="panel">
           <div class="panel-head">
@@ -142,6 +144,9 @@
             <option value="0">禁用</option>
           </select>
           <button id="queryPlatformUsers">查询</button>
+          <button id="batchDisableUsers" class="secondary">批量禁用</button>
+          <button id="batchBanComment" class="secondary">批量禁评</button>
+          <button id="batchBanUpload" class="secondary">批量禁传</button>
         </div>
         <section class="panel">
           <div class="panel-head">
@@ -152,6 +157,7 @@
             <table>
               <thead>
                 <tr>
+                  <th><input type="checkbox" id="checkAllPlatformUsers"></th>
                   <th>ID</th>
                   <th>用户名</th>
                   <th>联系方式</th>
@@ -201,7 +207,7 @@
           <section class="panel">
             <div class="panel-head">
               <h2>角色列表</h2>
-              <span class="hint">选择角色后可分配权限</span>
+              <button id="openRoleCreate">新增角色</button>
             </div>
             <div id="roleList" class="role-list"></div>
           </section>
@@ -233,6 +239,8 @@
             <option value="POST">动态</option>
           </select>
           <button id="queryContents">查询</button>
+          <button id="batchApproveContents" class="secondary">批量通过</button>
+          <button id="batchRejectContents" class="secondary">批量拒绝</button>
         </div>
         <section class="panel">
           <div class="panel-head">
@@ -242,6 +250,7 @@
             <table>
               <thead>
                 <tr>
+                  <th><input type="checkbox" id="checkAllContents"></th>
                   <th>ID</th>
                   <th>用户</th>
                   <th>类型</th>
@@ -325,6 +334,7 @@
                     <th>路径</th>
                     <th>状态</th>
                     <th>时间</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody id="backupTable"></tbody>
@@ -332,6 +342,27 @@
             </div>
           </section>
         </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>操作日志</h2>
+            <span class="hint">记录权限变更、文物维护、批量审核、备份恢复等后台操作</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>操作人</th>
+                  <th>模块</th>
+                  <th>类型</th>
+                  <th>对象</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="operationLogTable"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </main>
   </section>

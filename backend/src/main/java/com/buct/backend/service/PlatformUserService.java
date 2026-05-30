@@ -13,4 +13,10 @@ public interface PlatformUserService extends IService<PlatformUser> {
 
     // 查询用户提交的内容
     List<UserContent> getUserContents(Long userId);
+
+    void batchUpdateStatus(List<Long> ids, Integer status);
+
+    void batchUpdateBanComment(List<Long> ids, Integer banComment);
+
+    void batchUpdateBanUpload(List<Long> ids, Integer banUpload);
 }

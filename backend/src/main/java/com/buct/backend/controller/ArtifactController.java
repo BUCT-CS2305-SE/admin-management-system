@@ -7,6 +7,9 @@ import com.buct.backend.dto.ArtifactSaveDTO;
 import com.buct.backend.entity.Artifact;
 import com.buct.backend.service.ArtifactService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +18,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/artifacts")
@@ -40,6 +46,20 @@ public class ArtifactController {
     public Result<Void> addArtifact(@Valid @RequestBody ArtifactSaveDTO saveDTO) {
         artifactService.addArtifact(saveDTO);
         return Result.success();
+    }
+
+    @PostMapping("/import-json")
+    public Result<Integer> importJson(@RequestBody List<ArtifactSaveDTO> artifacts) {
+        return Result.success(artifactService.importArtifacts(artifacts));
+    }
+
+    @GetMapping("/export-csv")
+    public ResponseEntity<byte[]> exportCsv(ArtifactQueryDTO queryDTO) {
+        byte[] content = artifactService.exportArtifactsCsv(queryDTO).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=artifacts.csv")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(content);
     }
 
     @PutMapping("/{id}")

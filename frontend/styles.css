@@ -80,6 +80,11 @@ textarea {
   resize: vertical;
 }
 
+.large-textarea {
+  min-height: 300px;
+  font-family: Consolas, "Courier New", monospace;
+}
+
 .hidden {
   display: none !important;
 }
@@ -506,6 +511,10 @@ td.actions button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
+}
+
+.role-card .inline-actions {
+  margin-top: 10px;
 }
 
 .permission-chip {
