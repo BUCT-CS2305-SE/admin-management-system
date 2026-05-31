@@ -8,8 +8,19 @@
         <if test="adminUsername != null and adminUsername != ''">
             AND admin_username LIKE CONCAT('%', #{adminUsername}, '%')
         </if>
+        <if test="moduleName != null and moduleName != ''">
+            AND module_name LIKE CONCAT('%', #{moduleName}, '%')
+        </if>
         <if test="operationType != null and operationType != ''">
-            AND operation_type = #{operationType}
+            AND operation_type LIKE CONCAT('%', #{operationType}, '%')
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                target_type LIKE CONCAT('%', #{keyword}, '%')
+                OR target_id LIKE CONCAT('%', #{keyword}, '%')
+                OR before_data LIKE CONCAT('%', #{keyword}, '%')
+                OR after_data LIKE CONCAT('%', #{keyword}, '%')
+            )
         </if>
         <if test="startTime != null">
             AND operation_time &gt;= #{startTime}
@@ -27,8 +38,19 @@
         <if test="adminUsername != null and adminUsername != ''">
             AND admin_username LIKE CONCAT('%', #{adminUsername}, '%')
         </if>
+        <if test="moduleName != null and moduleName != ''">
+            AND module_name LIKE CONCAT('%', #{moduleName}, '%')
+        </if>
         <if test="operationType != null and operationType != ''">
-            AND operation_type = #{operationType}
+            AND operation_type LIKE CONCAT('%', #{operationType}, '%')
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                target_type LIKE CONCAT('%', #{keyword}, '%')
+                OR target_id LIKE CONCAT('%', #{keyword}, '%')
+                OR before_data LIKE CONCAT('%', #{keyword}, '%')
+                OR after_data LIKE CONCAT('%', #{keyword}, '%')
+            )
         </if>
         <if test="startTime != null">
             AND operation_time &gt;= #{startTime}
