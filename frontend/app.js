@@ -850,7 +850,11 @@ async function loadLogs() {
       startTime: dateTimeParam("#loginLogStart"),
       endTime: dateTimeParam("#loginLogEnd"),
     })}`),
-    request("/api/admin/backups/page?pageNum=1&pageSize=50"),
+    request(`/api/admin/backups/page?${qs({
+      pageNum: 1,
+      pageSize: 50,
+      backupType: $("#backupTypeQuery")?.value,
+    })}`),
     request(`/api/admin/logs/operations/page?${qs({
       pageNum: 1,
       pageSize: 50,
@@ -912,6 +916,11 @@ function clearOperationLogQuery() {
   $("#operationLogKeyword").value = "";
   $("#operationLogStart").value = "";
   $("#operationLogEnd").value = "";
+  loadLogs().catch((error) => showAlert(error.message, "error"));
+}
+
+function clearBackupQuery() {
+  $("#backupTypeQuery").value = "";
   loadLogs().catch((error) => showAlert(error.message, "error"));
 }
 
@@ -1040,6 +1049,8 @@ function bind() {
   $("#clearLoginLogs").addEventListener("click", clearLoginLogQuery);
   $("#queryOperationLogs").addEventListener("click", () => loadLogs().catch((error) => showAlert(error.message, "error")));
   $("#clearOperationLogs").addEventListener("click", clearOperationLogQuery);
+  $("#queryBackups").addEventListener("click", () => loadLogs().catch((error) => showAlert(error.message, "error")));
+  $("#clearBackups").addEventListener("click", clearBackupQuery);
   $("#openBackupCreate").addEventListener("click", openBackupCreate);
 }
 
