@@ -138,6 +138,11 @@ function numberOrNull(value) {
   return value === "" || value === null || value === undefined ? null : Number(value);
 }
 
+function dateTimeParam(selector) {
+  const value = $(selector)?.value;
+  return value ? `${value}:00` : "";
+}
+
 function checkedIds(selector) {
   return $$(selector).filter((item) => item.checked).map((item) => Number(item.value));
 }
@@ -379,10 +384,12 @@ async function loadPlatformUsers() {
       <td>${badge(user.status, {0: "禁用", 1: "启用"})}</td>
       <td>${badge(user.banComment, {0: "可评论", 1: "禁评"})} ${badge(user.banUpload, {0: "可上传", 1: "禁上传"})}</td>
       <td class="actions">
+        <button onclick="openPlatformUserEdit(${user.id})">编辑</button>
         <button onclick="togglePlatformStatus(${user.id}, ${user.status === 1 ? 0 : 1})">${user.status === 1 ? "禁用" : "启用"}</button>
         <button onclick="togglePlatformComment(${user.id}, ${user.banComment === 1 ? 0 : 1})">${user.banComment === 1 ? "允许评论" : "禁止评论"}</button>
         <button onclick="togglePlatformUpload(${user.id}, ${user.banUpload === 1 ? 0 : 1})">${user.banUpload === 1 ? "允许上传" : "禁止上传"}</button>
         <button class="secondary" onclick="viewPlatformContents(${user.id})">内容</button>
+        <button class="secondary" onclick="deletePlatformUser(${user.id})">删除</button>
       </td>
     </tr>
   `).join("") || `<tr><td colspan="8">暂无用户</td></tr>`;
@@ -400,6 +407,82 @@ async function batchPlatformUsers(type) {
   await request(path, { method: "PUT", body: JSON.stringify(body) });
   showAlert(message);
   await loadPlatformUsers();
+}
+
+function platformUserForm(user = {}) {
+  return `
+    <div class="form-grid">
+      <label>用户名<input name="username" value="${escapeHtml(user.username || "")}" required></label>
+      <label>手机号<input name="phone" value="${escapeHtml(user.phone || "")}"></label>
+      <label>邮箱<input name="email" value="${escapeHtml(user.email || "")}"></label>
+      <label>头像URL<input name="avatar" value="${escapeHtml(user.avatar || "")}"></label>
+      <label>来源
+        <select name="source">
+          <option value="WEB" ${user.source === "WEB" ? "selected" : ""}>WEB</option>
+          <option value="APP" ${user.source === "APP" ? "selected" : ""}>APP</option>
+          <option value="KNOWLEDGE" ${user.source === "KNOWLEDGE" ? "selected" : ""}>知识服务子系统</option>
+          <option value="MUSEUM" ${user.source === "MUSEUM" ? "selected" : ""}>掌上博物馆</option>
+        </select>
+      </label>
+      <label>账号状态
+        <select name="status">
+          <option value="1" ${Number(user.status ?? 1) === 1 ? "selected" : ""}>启用</option>
+          <option value="0" ${Number(user.status) === 0 ? "selected" : ""}>禁用</option>
+        </select>
+      </label>
+      <label>评论权限
+        <select name="banComment">
+          <option value="0" ${Number(user.banComment ?? 0) === 0 ? "selected" : ""}>允许评论</option>
+          <option value="1" ${Number(user.banComment) === 1 ? "selected" : ""}>禁止评论</option>
+        </select>
+      </label>
+      <label>上传权限
+        <select name="banUpload">
+          <option value="0" ${Number(user.banUpload ?? 0) === 0 ? "selected" : ""}>允许上传</option>
+          <option value="1" ${Number(user.banUpload) === 1 ? "selected" : ""}>禁止上传</option>
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function platformUserPayload(form) {
+  return {
+    username: formValue(form, "username"),
+    phone: formValue(form, "phone"),
+    email: formValue(form, "email"),
+    avatar: formValue(form, "avatar"),
+    source: formValue(form, "source", "WEB"),
+    status: Number(formValue(form, "status", 1)),
+    banComment: Number(formValue(form, "banComment", 0)),
+    banUpload: Number(formValue(form, "banUpload", 0)),
+  };
+}
+
+function openPlatformUserCreate() {
+  openForm("新增平台用户", platformUserForm(), async (form) => {
+    await request("/api/admin/platform-users", { method: "POST", body: JSON.stringify(platformUserPayload(form)) });
+    showAlert("平台用户已新增");
+    await loadPlatformUsers();
+    await loadDashboard();
+  });
+}
+
+async function openPlatformUserEdit(id) {
+  const user = await request(`/api/admin/platform-users/${id}`);
+  openForm("编辑平台用户", platformUserForm(user), async (form) => {
+    await request(`/api/admin/platform-users/${id}`, { method: "PUT", body: JSON.stringify(platformUserPayload(form)) });
+    showAlert("平台用户已更新");
+    await loadPlatformUsers();
+  });
+}
+
+async function deletePlatformUser(id) {
+  if (!confirm("确定删除该平台用户吗？")) return;
+  await request(`/api/admin/platform-users/${id}`, { method: "DELETE" });
+  showAlert("平台用户已删除");
+  await loadPlatformUsers();
+  await loadDashboard();
 }
 
 async function togglePlatformStatus(id, status) {
@@ -447,7 +530,8 @@ async function loadAdminUsers() {
 }
 
 function adminForm(user = {}) {
-  const roleOptions = state.roles.map((role) => `<option value="${role.id}" ${Number(user.roleId) === Number(role.id) ? "selected" : ""}>${escapeHtml(role.roleName)}</option>`).join("");
+  const adminRoles = state.roles.filter((role) => role.roleCode !== "NORMAL_USER");
+  const roleOptions = adminRoles.map((role) => `<option value="${role.id}" ${Number(user.roleId) === Number(role.id) ? "selected" : ""}>${escapeHtml(role.roleName)}</option>`).join("");
   return `
     <div class="form-grid">
       <label>账号<input name="username" value="${escapeHtml(user.username || "")}" required></label>
@@ -758,9 +842,25 @@ async function deleteWord(id) {
 
 async function loadLogs() {
   const [loginLogs, backups, operationLogs] = await Promise.all([
-    request("/api/admin/logs/login/page?pageNum=1&pageSize=50"),
+    request(`/api/admin/logs/login/page?${qs({
+      pageNum: 1,
+      pageSize: 50,
+      username: $("#loginLogUsername")?.value,
+      loginStatus: $("#loginLogStatus")?.value,
+      startTime: dateTimeParam("#loginLogStart"),
+      endTime: dateTimeParam("#loginLogEnd"),
+    })}`),
     request("/api/admin/backups/page?pageNum=1&pageSize=50"),
-    request("/api/admin/logs/operations/page?pageNum=1&pageSize=50"),
+    request(`/api/admin/logs/operations/page?${qs({
+      pageNum: 1,
+      pageSize: 50,
+      operator: $("#operationLogOperator")?.value,
+      moduleName: $("#operationLogModule")?.value,
+      operationType: $("#operationLogType")?.value,
+      keyword: $("#operationLogKeyword")?.value,
+      startTime: dateTimeParam("#operationLogStart"),
+      endTime: dateTimeParam("#operationLogEnd"),
+    })}`),
   ]);
   $("#loginLogTable").innerHTML = records(loginLogs).map((log) => `
     <tr>
@@ -795,6 +895,24 @@ async function loadLogs() {
       <td>${fmt(log.operationTime)}</td>
     </tr>
   `).join("") || `<tr><td colspan="6">暂无操作日志</td></tr>`;
+}
+
+function clearLoginLogQuery() {
+  $("#loginLogUsername").value = "";
+  $("#loginLogStatus").value = "";
+  $("#loginLogStart").value = "";
+  $("#loginLogEnd").value = "";
+  loadLogs().catch((error) => showAlert(error.message, "error"));
+}
+
+function clearOperationLogQuery() {
+  $("#operationLogOperator").value = "";
+  $("#operationLogModule").value = "";
+  $("#operationLogType").value = "";
+  $("#operationLogKeyword").value = "";
+  $("#operationLogStart").value = "";
+  $("#operationLogEnd").value = "";
+  loadLogs().catch((error) => showAlert(error.message, "error"));
 }
 
 function backupForm() {
@@ -903,6 +1021,7 @@ function bind() {
   $("#exportArtifacts").addEventListener("click", () => exportArtifacts().catch((error) => showAlert(error.message, "error")));
 
   $("#queryPlatformUsers").addEventListener("click", loadPlatformUsers);
+  $("#openPlatformUserCreate").addEventListener("click", openPlatformUserCreate);
   $("#checkAllPlatformUsers").addEventListener("change", (event) => $$(".platform-user-check").forEach((item) => item.checked = event.target.checked));
   $("#batchDisableUsers").addEventListener("click", () => batchPlatformUsers("status").catch((error) => showAlert(error.message, "error")));
   $("#batchBanComment").addEventListener("click", () => batchPlatformUsers("banComment").catch((error) => showAlert(error.message, "error")));
@@ -917,6 +1036,10 @@ function bind() {
   $("#batchRejectContents").addEventListener("click", () => batchRejectContents().catch((error) => showAlert(error.message, "error")));
   $("#queryWords").addEventListener("click", loadSensitiveWords);
   $("#openWordCreate").addEventListener("click", openWordCreate);
+  $("#queryLoginLogs").addEventListener("click", () => loadLogs().catch((error) => showAlert(error.message, "error")));
+  $("#clearLoginLogs").addEventListener("click", clearLoginLogQuery);
+  $("#queryOperationLogs").addEventListener("click", () => loadLogs().catch((error) => showAlert(error.message, "error")));
+  $("#clearOperationLogs").addEventListener("click", clearOperationLogQuery);
   $("#openBackupCreate").addEventListener("click", openBackupCreate);
 }
 
@@ -929,6 +1052,8 @@ Object.assign(window, {
   togglePlatformStatus,
   togglePlatformComment,
   togglePlatformUpload,
+  openPlatformUserEdit,
+  deletePlatformUser,
   viewPlatformContents,
   openAdminEdit,
   toggleAdminStatus,

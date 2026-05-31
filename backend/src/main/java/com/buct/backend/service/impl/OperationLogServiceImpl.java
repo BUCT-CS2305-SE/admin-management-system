@@ -27,7 +27,9 @@ public class OperationLogServiceImpl implements OperationLogService {
         
         List<OperationLog> records = operationLogMapper.selectByConditions(
                 queryDTO.getOperator(),
+                queryDTO.getModuleName(),
                 queryDTO.getOperationType(),
+                queryDTO.getKeyword(),
                 queryDTO.getStartTime(),
                 queryDTO.getEndTime(),
                 offset,
@@ -36,7 +38,9 @@ public class OperationLogServiceImpl implements OperationLogService {
 
         Long total = operationLogMapper.countByConditions(
                 queryDTO.getOperator(),
+                queryDTO.getModuleName(),
                 queryDTO.getOperationType(),
+                queryDTO.getKeyword(),
                 queryDTO.getStartTime(),
                 queryDTO.getEndTime()
         );

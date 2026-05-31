@@ -13,7 +13,9 @@ public interface OperationLogMapper extends BaseMapper<OperationLog> {
 
     List<OperationLog> selectByConditions(
             @Param("adminUsername") String adminUsername,
+            @Param("moduleName") String moduleName,
             @Param("operationType") String operationType,
+            @Param("keyword") String keyword,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
             @Param("offset") Long offset,
@@ -22,7 +24,9 @@ public interface OperationLogMapper extends BaseMapper<OperationLog> {
 
     Long countByConditions(
             @Param("adminUsername") String adminUsername,
+            @Param("moduleName") String moduleName,
             @Param("operationType") String operationType,
+            @Param("keyword") String keyword,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );

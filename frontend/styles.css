@@ -391,6 +391,17 @@ h2 {
   width: min(220px, 100%);
 }
 
+.compact-toolbar {
+  border-width: 0 0 1px;
+  border-radius: 0;
+  padding: 12px 16px;
+}
+
+.compact-toolbar input,
+.compact-toolbar select {
+  width: min(170px, 100%);
+}
+
 .table-wrap {
   overflow-x: auto;
 }

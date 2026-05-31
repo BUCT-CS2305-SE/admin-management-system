@@ -8,6 +8,10 @@ public class LogQueryDTO {
 
     private String operationType;
 
+    private String moduleName;
+
+    private String keyword;
+
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
@@ -30,6 +34,22 @@ public class LogQueryDTO {
 
     public void setOperationType(String operationType) {
         this.operationType = operationType;
+    }
+
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public void setModuleName(String moduleName) {
+        this.moduleName = moduleName;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
     }
 
     public LocalDateTime getStartTime() {

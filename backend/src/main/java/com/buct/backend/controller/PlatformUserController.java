@@ -4,10 +4,12 @@ import com.buct.backend.common.PageResult;
 import com.buct.backend.common.Result;
 import com.buct.backend.dto.BatchPlatformUserStatusDTO;
 import com.buct.backend.dto.PlatformUserQueryDTO;
+import com.buct.backend.dto.PlatformUserSaveDTO;
 import com.buct.backend.entity.PlatformUser;
 import com.buct.backend.entity.UserContent;
 import com.buct.backend.service.PlatformUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +32,24 @@ public class PlatformUserController {
     @GetMapping("/{id}")
     public Result<PlatformUser> getById(@PathVariable Long id) {
         return Result.success(platformUserService.getById(id));
+    }
+
+    @PostMapping
+    public Result<Void> add(@Valid @RequestBody PlatformUserSaveDTO saveDTO) {
+        platformUserService.addPlatformUser(saveDTO);
+        return Result.success();
+    }
+
+    @PutMapping("/{id}")
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody PlatformUserSaveDTO saveDTO) {
+        platformUserService.updatePlatformUser(id, saveDTO);
+        return Result.success();
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        platformUserService.deletePlatformUser(id);
+        return Result.success();
     }
 
     // 3. 启用/禁用用户

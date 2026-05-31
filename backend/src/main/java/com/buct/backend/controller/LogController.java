@@ -32,7 +32,9 @@ public class LogController {
     @GetMapping("/operations/page")
     public Result<PageResult<OperationLog>> getOperationLogs(
             @RequestParam(required = false) String operator,
+            @RequestParam(required = false) String moduleName,
             @RequestParam(required = false) String operationType,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
             @RequestParam(defaultValue = "1") Long pageNum,
@@ -40,7 +42,9 @@ public class LogController {
 
         LogQueryDTO queryDTO = new LogQueryDTO();
         queryDTO.setOperator(operator);
+        queryDTO.setModuleName(moduleName);
         queryDTO.setOperationType(operationType);
+        queryDTO.setKeyword(keyword);
         queryDTO.setStartTime(startTime);
         queryDTO.setEndTime(endTime);
         queryDTO.setPageNum(pageNum);

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.buct.backend.common.BusinessException;
 import com.buct.backend.common.PageResult;
 import com.buct.backend.dto.PlatformUserQueryDTO;
+import com.buct.backend.dto.PlatformUserSaveDTO;
 import com.buct.backend.entity.PlatformUser;
 import com.buct.backend.entity.UserContent;
 import com.buct.backend.mapper.PlatformUserMapper;
@@ -14,6 +15,9 @@ import com.buct.backend.service.OperationLogService;
 import com.buct.backend.service.PlatformUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -43,6 +47,43 @@ public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, Pla
                 page.getCurrent(),
                 page.getSize()
         );
+    }
+
+    @Override
+    public void addPlatformUser(PlatformUserSaveDTO saveDTO) {
+        checkUsernameUnique(saveDTO.getUsername(), null);
+
+        PlatformUser user = new PlatformUser();
+        fillUser(user, saveDTO);
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
+        save(user);
+        operationLogService.record("平台用户管理", "新增平台用户", "platform_user", String.valueOf(user.getId()), null, user.getUsername());
+    }
+
+    @Override
+    public void updatePlatformUser(Long id, PlatformUserSaveDTO saveDTO) {
+        PlatformUser user = getById(id);
+        if (user == null) {
+            throw new BusinessException("平台用户不存在");
+        }
+        checkUsernameUnique(saveDTO.getUsername(), id);
+
+        String before = user.getUsername();
+        fillUser(user, saveDTO);
+        user.setUpdateTime(LocalDateTime.now());
+        updateById(user);
+        operationLogService.record("平台用户管理", "编辑平台用户", "platform_user", String.valueOf(id), before, user.getUsername());
+    }
+
+    @Override
+    public void deletePlatformUser(Long id) {
+        PlatformUser user = getById(id);
+        if (user == null) {
+            throw new BusinessException("平台用户不存在");
+        }
+        removeById(id);
+        operationLogService.record("平台用户管理", "删除平台用户", "platform_user", String.valueOf(id), user.getUsername(), null);
     }
 
     @Override
@@ -95,6 +136,30 @@ public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, Pla
         }
         if (value == null) {
             throw new BusinessException(message);
+        }
+    }
+
+    private void fillUser(PlatformUser user, PlatformUserSaveDTO saveDTO) {
+        user.setUsername(saveDTO.getUsername());
+        user.setPhone(saveDTO.getPhone());
+        user.setEmail(saveDTO.getEmail());
+        user.setAvatar(saveDTO.getAvatar());
+        user.setSource(StringUtils.hasText(saveDTO.getSource()) ? saveDTO.getSource() : "WEB");
+        user.setStatus(saveDTO.getStatus() == null ? 1 : saveDTO.getStatus());
+        user.setBanComment(saveDTO.getBanComment() == null ? 0 : saveDTO.getBanComment());
+        user.setBanUpload(saveDTO.getBanUpload() == null ? 0 : saveDTO.getBanUpload());
+    }
+
+    private void checkUsernameUnique(String username, Long currentId) {
+        if (!StringUtils.hasText(username)) {
+            throw new BusinessException("用户名不能为空");
+        }
+        LambdaQueryWrapper<PlatformUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PlatformUser::getUsername, username)
+                .ne(currentId != null, PlatformUser::getId, currentId);
+        Long count = count(wrapper);
+        if (count != null && count > 0) {
+            throw new BusinessException("平台用户名已存在");
         }
     }
 }

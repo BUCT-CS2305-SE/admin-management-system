@@ -144,6 +144,7 @@
             <option value="0">禁用</option>
           </select>
           <button id="queryPlatformUsers">查询</button>
+          <button id="openPlatformUserCreate">新增平台用户</button>
           <button id="batchDisableUsers" class="secondary">批量禁用</button>
           <button id="batchBanComment" class="secondary">批量禁评</button>
           <button id="batchBanUpload" class="secondary">批量禁传</button>
@@ -304,6 +305,18 @@
             <div class="panel-head">
               <h2>登录日志</h2>
             </div>
+            <div class="toolbar compact-toolbar">
+              <input id="loginLogUsername" placeholder="登录账号">
+              <select id="loginLogStatus">
+                <option value="">全部状态</option>
+                <option value="1">成功</option>
+                <option value="0">失败</option>
+              </select>
+              <input id="loginLogStart" type="datetime-local">
+              <input id="loginLogEnd" type="datetime-local">
+              <button id="queryLoginLogs">查询登录日志</button>
+              <button id="clearLoginLogs" class="secondary">清空</button>
+            </div>
             <div class="table-wrap">
               <table>
                 <thead>
@@ -346,6 +359,16 @@
           <div class="panel-head">
             <h2>操作日志</h2>
             <span class="hint">记录权限变更、文物维护、批量审核、备份恢复等后台操作</span>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <input id="operationLogOperator" placeholder="操作人">
+            <input id="operationLogModule" placeholder="模块名称">
+            <input id="operationLogType" placeholder="操作类型">
+            <input id="operationLogKeyword" placeholder="对象/数据关键字">
+            <input id="operationLogStart" type="datetime-local">
+            <input id="operationLogEnd" type="datetime-local">
+            <button id="queryOperationLogs">查询操作日志</button>
+            <button id="clearOperationLogs" class="secondary">清空</button>
           </div>
           <div class="table-wrap">
             <table>
