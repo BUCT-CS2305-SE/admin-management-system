@@ -300,61 +300,39 @@
       </section>
 
       <section id="logs" class="view">
-        <div class="split">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>登录日志</h2>
-            </div>
-            <div class="toolbar compact-toolbar">
-              <input id="loginLogUsername" placeholder="登录账号">
-              <select id="loginLogStatus">
-                <option value="">全部状态</option>
-                <option value="1">成功</option>
-                <option value="0">失败</option>
-              </select>
-              <input id="loginLogStart" type="datetime-local">
-              <input id="loginLogEnd" type="datetime-local">
-              <button id="queryLoginLogs">查询登录日志</button>
-              <button id="clearLoginLogs" class="secondary">清空</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>账号</th>
-                    <th>状态</th>
-                    <th>IP</th>
-                    <th>时间</th>
-                  </tr>
-                </thead>
-                <tbody id="loginLogTable"></tbody>
-              </table>
-            </div>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>数据备份</h2>
-              <button id="openBackupCreate">手动备份</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>名称</th>
-                    <th>类型</th>
-                    <th>路径</th>
-                    <th>状态</th>
-                    <th>时间</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody id="backupTable"></tbody>
-              </table>
-            </div>
-          </section>
-        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>登录日志</h2>
+            <span class="hint">支持按账号、登录状态和时间范围查询</span>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <input id="loginLogUsername" placeholder="登录账号">
+            <select id="loginLogStatus">
+              <option value="">全部状态</option>
+              <option value="1">成功</option>
+              <option value="0">失败</option>
+            </select>
+            <input id="loginLogStart" type="datetime-local">
+            <input id="loginLogEnd" type="datetime-local">
+            <button id="queryLoginLogs">查询登录日志</button>
+            <button id="clearLoginLogs" class="secondary">清空</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>账号</th>
+                  <th>状态</th>
+                  <th>IP</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="loginLogTable"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel">
           <div class="panel-head">
             <h2>操作日志</h2>
@@ -383,6 +361,38 @@
                 </tr>
               </thead>
               <tbody id="operationLogTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>数据备份</h2>
+            <button id="openBackupCreate">手动备份</button>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <select id="backupTypeQuery">
+              <option value="">全部备份类型</option>
+              <option value="FULL">全量备份</option>
+              <option value="PARTIAL">部分备份</option>
+            </select>
+            <button id="queryBackups">查询备份</button>
+            <button id="clearBackups" class="secondary">清空</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>名称</th>
+                  <th>类型</th>
+                  <th>路径</th>
+                  <th>状态</th>
+                  <th>时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="backupTable"></tbody>
             </table>
           </div>
         </section>
