@@ -1,11 +1,14 @@
 package com.buct.backend.common;
 
+import java.util.List;
+
 public class AuthUser {
 
     private Long userId;
     private String username;
     private String userType;
     private Long roleId;
+    private List<String> permissionCodes;
 
     public AuthUser() {
     }
@@ -47,5 +50,13 @@ public class AuthUser {
 
     public void setRoleId(Long roleId) {
         this.roleId = roleId;
+    }
+
+    public List<String> getPermissionCodes() {
+        return permissionCodes;
+    }
+
+    public void setPermissionCodes(List<String> permissionCodes) {
+        this.permissionCodes = permissionCodes;
     }
 }

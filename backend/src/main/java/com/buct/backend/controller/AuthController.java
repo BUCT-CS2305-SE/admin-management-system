@@ -7,8 +7,13 @@ import com.buct.backend.common.Result;
 import com.buct.backend.dto.LoginDTO;
 import com.buct.backend.dto.LoginResponseDTO;
 import com.buct.backend.entity.AdminUser;
+import com.buct.backend.entity.Permission;
+import com.buct.backend.entity.RolePermission;
+import com.buct.backend.mapper.PermissionMapper;
+import com.buct.backend.mapper.RolePermissionMapper;
 import com.buct.backend.service.AdminUserService;
 import com.buct.backend.util.JwtUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,16 +22,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/admin/auth")
 public class AuthController {
 
     private final AdminUserService adminUserService;
     private final JwtUtil jwtUtil;
+    private final RolePermissionMapper rolePermissionMapper;
+    private final PermissionMapper permissionMapper;
 
-    public AuthController(AdminUserService adminUserService, JwtUtil jwtUtil) {
+    public AuthController(AdminUserService adminUserService,
+                          JwtUtil jwtUtil,
+                          RolePermissionMapper rolePermissionMapper,
+                          PermissionMapper permissionMapper) {
         this.adminUserService = adminUserService;
         this.jwtUtil = jwtUtil;
+        this.rolePermissionMapper = rolePermissionMapper;
+        this.permissionMapper = permissionMapper;
     }
 
     @PostMapping("/login")
@@ -34,6 +49,7 @@ public class AuthController {
         String ip = getClientIp(request);
         AdminUser adminUser = adminUserService.login(loginDTO, ip);
         AuthUser authUser = new AuthUser(adminUser.getId(), adminUser.getUsername(), AuthUserType.ADMIN, adminUser.getRoleId());
+        authUser.setPermissionCodes(loadPermissionCodes(adminUser.getRoleId()));
 
         LoginResponseDTO response = new LoginResponseDTO();
         response.setToken(jwtUtil.createToken(authUser));
@@ -71,5 +87,27 @@ public class AuthController {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    private List<String> loadPermissionCodes(Long roleId) {
+        if (roleId == null) {
+            return List.of();
+        }
+
+        LambdaQueryWrapper<RolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(RolePermission::getRoleId, roleId);
+        List<Long> permissionIds = rolePermissionMapper.selectList(wrapper)
+                .stream()
+                .map(RolePermission::getPermissionId)
+                .toList();
+        if (permissionIds.isEmpty()) {
+            return List.of();
+        }
+
+        return permissionMapper.selectBatchIds(permissionIds)
+                .stream()
+                .map(Permission::getPermissionCode)
+                .filter(Objects::nonNull)
+                .toList();
     }
 }

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海外藏中国文物后台管理子系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-visual">
+      <div class="seal">文</div>
+      <h1>海外藏中国文物知识管理与服务平台</h1>
+      <p>后台管理子系统</p>
+      <div class="login-points">
+        <span>文物数据管理</span>
+        <span>用户与权限控制</span>
+        <span>内容审核与日志审计</span>
+      </div>
+    </div>
+    <form id="loginForm" class="login-card">
+      <h2>管理员登录</h2>
+      <label>
+        账号
+        <input id="loginUsername" value="admin" autocomplete="username">
+      </label>
+      <label>
+        密码
+        <input id="loginPassword" value="123456" type="password" autocomplete="current-password">
+      </label>
+      <label>
+        后端地址
+        <input id="apiBase" value="http://localhost:8080">
+      </label>
+      <button type="submit">进入后台</button>
+      <p id="loginMessage" class="form-message"></p>
+    </form>
+  </section>
+
+  <section id="appScreen" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">文</div>
+        <div>
+          <strong>后台管理子系统</strong>
+          <span>Admin Console</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard">看板总览</button>
+        <button class="nav-item" data-view="artifacts">文物数据管理</button>
+        <button class="nav-item" data-view="platformUsers">平台用户管理</button>
+        <button class="nav-item" data-view="adminUsers">管理员管理</button>
+        <button class="nav-item" data-view="roles">角色权限管理</button>
+        <button class="nav-item" data-view="content">内容审核</button>
+        <button class="nav-item" data-view="sensitive">敏感词库</button>
+        <button class="nav-item" data-view="logs">日志与备份</button>
+      </nav>
+      <div class="operator-card">
+        <span>当前管理员</span>
+        <strong id="operatorName">未登录</strong>
+        <button id="logoutBtn">退出登录</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Overseas Chinese Cultural Relics</p>
+          <h1 id="pageTitle">看板总览</h1>
+        </div>
+        <div class="top-actions">
+          <button id="refreshBtn">刷新当前模块</button>
+          <span id="connectionState" class="badge ok">后端已连接</span>
+        </div>
+      </header>
+
+      <section id="alert" class="alert hidden"></section>
+
+      <section id="dashboard" class="view active">
+        <div id="metricGrid" class="metrics-grid"></div>
+        <div class="split">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>文物类型统计</h2>
+            </div>
+            <div id="artifactBars" class="bar-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>审核状态统计</h2>
+            </div>
+            <div id="contentBars" class="bar-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="artifacts" class="view">
+        <div class="toolbar">
+          <input id="artifactTitle" placeholder="文物名称">
+          <input id="artifactType" placeholder="类型">
+          <input id="artifactMuseum" placeholder="博物馆">
+          <button id="queryArtifacts">查询</button>
+          <button id="clearArtifactQuery" class="secondary">清空</button>
+          <button id="openArtifactCreate">新增文物</button>
+          <button id="openArtifactImport" class="secondary">JSON导入</button>
+          <button id="exportArtifacts" class="secondary">导出CSV</button>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>文物数据列表</h2>
+            <span id="artifactTotal" class="badge"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>名称</th>
+                  <th>年代</th>
+                  <th>类型</th>
+                  <th>博物馆</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="artifactTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="platformUsers" class="view">
+        <div class="toolbar">
+          <input id="platformUsername" placeholder="用户名">
+          <select id="platformSource">
+            <option value="">全部来源</option>
+            <option value="WEB">WEB</option>
+            <option value="APP">APP</option>
+          </select>
+          <select id="platformStatus">
+            <option value="">全部状态</option>
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+          <button id="queryPlatformUsers">查询</button>
+          <button id="openPlatformUserCreate">新增平台用户</button>
+          <button id="batchDisableUsers" class="secondary">批量禁用</button>
+          <button id="batchBanComment" class="secondary">批量禁评</button>
+          <button id="batchBanUpload" class="secondary">批量禁传</button>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>平台用户列表</h2>
+            <span class="hint">后端支持查询、启禁用、禁评、禁上传</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="checkAllPlatformUsers"></th>
+                  <th>ID</th>
+                  <th>用户名</th>
+                  <th>联系方式</th>
+                  <th>来源</th>
+                  <th>状态</th>
+                  <th>权限限制</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="platformUserTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="adminUsers" class="view">
+        <div class="toolbar">
+          <input id="adminUsername" placeholder="管理员账号">
+          <button id="queryAdminUsers">查询</button>
+          <button id="openAdminCreate">新增管理员</button>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>后台管理员账号</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>账号</th>
+                  <th>姓名</th>
+                  <th>角色</th>
+                  <th>状态</th>
+                  <th>最后登录</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="adminUserTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="roles" class="view">
+        <div class="split">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>角色列表</h2>
+              <button id="openRoleCreate">新增角色</button>
+            </div>
+            <div id="roleList" class="role-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2 id="permissionTitle">权限分配</h2>
+              <button id="saveRolePermissions">保存权限</button>
+            </div>
+            <div id="permissionList" class="permission-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="content" class="view">
+        <div class="toolbar">
+          <select id="contentStatus">
+            <option value="">全部状态</option>
+            <option value="0">待审核</option>
+            <option value="1">通过</option>
+            <option value="2">拒绝</option>
+            <option value="3">复审</option>
+          </select>
+          <select id="contentType">
+            <option value="">全部类型</option>
+            <option value="COMMENT">评论</option>
+            <option value="IMAGE">图片</option>
+            <option value="AUDIO">音频</option>
+            <option value="VIDEO">视频</option>
+            <option value="POST">动态</option>
+          </select>
+          <button id="queryContents">查询</button>
+          <button id="batchApproveContents" class="secondary">批量通过</button>
+          <button id="batchRejectContents" class="secondary">批量拒绝</button>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>人工审核队列</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="checkAllContents"></th>
+                  <th>ID</th>
+                  <th>用户</th>
+                  <th>类型</th>
+                  <th>关联文物</th>
+                  <th>内容</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="contentTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="sensitive" class="view">
+        <div class="toolbar">
+          <input id="wordQuery" placeholder="敏感词">
+          <select id="wordStatusQuery">
+            <option value="">全部状态</option>
+            <option value="1">启用</option>
+            <option value="0">停用</option>
+          </select>
+          <button id="queryWords">查询</button>
+          <button id="openWordCreate">新增敏感词</button>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>敏感词管理</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>敏感词</th>
+                  <th>状态</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="wordTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="logs" class="view">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>登录日志</h2>
+            <span class="hint">支持按账号、登录状态和时间范围查询</span>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <input id="loginLogUsername" placeholder="登录账号">
+            <select id="loginLogStatus">
+              <option value="">全部状态</option>
+              <option value="1">成功</option>
+              <option value="0">失败</option>
+            </select>
+            <input id="loginLogStart" type="datetime-local">
+            <input id="loginLogEnd" type="datetime-local">
+            <button id="queryLoginLogs">查询登录日志</button>
+            <button id="clearLoginLogs" class="secondary">清空</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>账号</th>
+                  <th>状态</th>
+                  <th>IP</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="loginLogTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>操作日志</h2>
+            <span class="hint">记录权限变更、文物维护、批量审核、备份恢复等后台操作</span>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <input id="operationLogOperator" placeholder="操作人">
+            <input id="operationLogModule" placeholder="模块名称">
+            <input id="operationLogType" placeholder="操作类型">
+            <input id="operationLogKeyword" placeholder="对象/数据关键字">
+            <input id="operationLogStart" type="datetime-local">
+            <input id="operationLogEnd" type="datetime-local">
+            <button id="queryOperationLogs">查询操作日志</button>
+            <button id="clearOperationLogs" class="secondary">清空</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>操作人</th>
+                  <th>模块</th>
+                  <th>类型</th>
+                  <th>对象</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody id="operationLogTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>数据备份</h2>
+            <button id="openBackupCreate">手动备份</button>
+          </div>
+          <div class="toolbar compact-toolbar">
+            <select id="backupTypeQuery">
+              <option value="">全部备份类型</option>
+              <option value="FULL">全量备份</option>
+              <option value="PARTIAL">部分备份</option>
+            </select>
+            <button id="queryBackups">查询备份</button>
+            <button id="clearBackups" class="secondary">清空</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>名称</th>
+                  <th>类型</th>
+                  <th>路径</th>
+                  <th>状态</th>
+                  <th>时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="backupTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </section>
+
+  <dialog id="modal">
+    <form id="modalForm" method="dialog">
+      <div class="modal-head">
+        <h2 id="modalTitle">表单</h2>
+        <button type="button" id="modalClose" class="icon-button">关闭</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" id="modalCancel" class="secondary">取消</button>
+        <button type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="detailModal">
+    <div class="modal-head">
+      <h2 id="detailTitle">详情</h2>
+      <button type="button" id="detailClose" class="icon-button">关闭</button>
+    </div>
+    <pre id="detailBody"></pre>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

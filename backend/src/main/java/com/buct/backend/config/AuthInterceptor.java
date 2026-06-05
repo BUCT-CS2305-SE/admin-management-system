@@ -18,6 +18,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
@@ -75,6 +76,12 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
             authUser.setUsername(adminUser.getUsername());
             authUser.setRoleId(adminUser.getRoleId());
+
+            String requiredPermission = resolveRequiredPermission(request);
+            if (requiredPermission != null && !hasPermission(authUser, requiredPermission)) {
+                writeError(response, 403, "无权访问当前接口");
+                return false;
+            }
         }
 
         if (AuthUserType.PLATFORM_USER.equals(authUser.getUserType())) {
@@ -109,5 +116,53 @@ public class AuthInterceptor implements HandlerInterceptor {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         Result<Void> result = new Result<>(code, message, null);
         response.getWriter().write(objectMapper.writeValueAsString(result));
+    }
+
+    private boolean hasPermission(AuthUser authUser, String permissionCode) {
+        List<String> permissionCodes = authUser.getPermissionCodes();
+        return permissionCodes != null && permissionCodes.contains(permissionCode);
+    }
+
+    private String resolveRequiredPermission(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if (path.startsWith("/api/admin/dashboard")) {
+            return "dashboard:view";
+        }
+        if (path.startsWith("/api/admin/logs")) {
+            return "log:view";
+        }
+        if (path.startsWith("/api/admin/artifacts")) {
+            if ("GET".equalsIgnoreCase(method)) {
+                return "artifact:view";
+            }
+            if ("POST".equalsIgnoreCase(method)) {
+                if (path.endsWith("/import-json")) {
+                    return "artifact:import";
+                }
+                return "artifact:add";
+            }
+            if ("PUT".equalsIgnoreCase(method)) {
+                return "artifact:edit";
+            }
+            if ("DELETE".equalsIgnoreCase(method)) {
+                return "artifact:delete";
+            }
+        }
+        if (path.startsWith("/api/admin/content/audit") || path.startsWith("/api/admin/contents")) {
+            if ("GET".equalsIgnoreCase(method)) {
+                return "content:view";
+            }
+            return "content:review";
+        }
+        if (path.startsWith("/api/admin/platform-users")) {
+            if ("GET".equalsIgnoreCase(method)) {
+                return "user:view";
+            }
+            return "user:status";
+        }
+
+        return null;
     }
 }

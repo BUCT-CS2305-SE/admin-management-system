@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -23,6 +24,7 @@ public class JwtUtil {
 
     public String createToken(AuthUser user) {
         Date expireAt = Date.from(getExpireAt().atZone(ZoneId.systemDefault()).toInstant());
+        List<String> permissionCodes = user.getPermissionCodes() == null ? List.of() : user.getPermissionCodes();
         return JWT.create()
                 .withIssuer(ISSUER)
                 .withSubject(String.valueOf(user.getUserId()))
@@ -30,6 +32,7 @@ public class JwtUtil {
                 .withClaim("username", user.getUsername())
                 .withClaim("userType", user.getUserType())
                 .withClaim("roleId", user.getRoleId())
+            .withClaim("permissions", permissionCodes)
                 .withExpiresAt(expireAt)
                 .sign(algorithm);
     }
@@ -40,7 +43,10 @@ public class JwtUtil {
         String username = jwt.getClaim("username").asString();
         String userType = jwt.getClaim("userType").asString();
         Long roleId = jwt.getClaim("roleId").asLong();
-        return new AuthUser(userId, username, userType, roleId);
+        List<String> permissionCodes = jwt.getClaim("permissions").asList(String.class);
+        AuthUser authUser = new AuthUser(userId, username, userType, roleId);
+        authUser.setPermissionCodes(permissionCodes == null ? List.of() : permissionCodes);
+        return authUser;
     }
 
     public LocalDateTime getExpireAt() {
