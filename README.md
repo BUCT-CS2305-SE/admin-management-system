@@ -24,9 +24,27 @@ mysql -use_admin -p xxxx < ./init.sql
 ```
 
 - modify `application.yml`
+----
+```bash
+sdk install java 17.0.11-tem
+sdk use java 17.0.11-tem
+sdk default java 17.0.11-tem
+java -version / javac -version
+```
+----
+```bash
+apt update && apt install openjdk-17-jdk -y
+update-alternatives --config java
+update-alternatives --config javac
+java -version
+javac -version
+```
+
+
 
 ```bash
+chmod +x mvnw
 cd admin-management-system/backend
 ./mvnw -DskipTests package
-java -jar target/*.jar
+java -jar target/*.jar --server.port=8081
 ```
