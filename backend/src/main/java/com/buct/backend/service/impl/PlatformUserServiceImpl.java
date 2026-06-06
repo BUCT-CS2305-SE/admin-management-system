@@ -8,12 +8,15 @@ import com.buct.backend.common.PageResult;
 import com.buct.backend.dto.PlatformUserQueryDTO;
 import com.buct.backend.dto.PlatformUserSaveDTO;
 import com.buct.backend.entity.PlatformUser;
+import com.buct.backend.entity.Role;
 import com.buct.backend.entity.UserContent;
 import com.buct.backend.mapper.PlatformUserMapper;
+import com.buct.backend.mapper.RoleMapper;
 import com.buct.backend.mapper.UserContentMapper;
 import com.buct.backend.service.OperationLogService;
 import com.buct.backend.service.PlatformUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -29,6 +32,12 @@ public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, Pla
 
     @Autowired
     private OperationLogService operationLogService;
+
+    @Autowired
+    private RoleMapper roleMapper;
+
+    private static final String DEFAULT_ROLE_CODE = "NORMAL_USER";
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Override
     public PageResult<PlatformUser> page(PlatformUserQueryDTO dto) {
@@ -148,6 +157,29 @@ public class PlatformUserServiceImpl extends ServiceImpl<PlatformUserMapper, Pla
         user.setStatus(saveDTO.getStatus() == null ? 1 : saveDTO.getStatus());
         user.setBanComment(saveDTO.getBanComment() == null ? 0 : saveDTO.getBanComment());
         user.setBanUpload(saveDTO.getBanUpload() == null ? 0 : saveDTO.getBanUpload());
+
+        // 角色：传了用传的，否则填默认普通用户角色（保持非空）
+        Long roleId = saveDTO.getRoleId();
+        if (roleId == null) {
+            if (user.getRoleId() == null) {
+                Role defaultRole = findDefaultRole();
+                roleId = defaultRole == null ? null : defaultRole.getId();
+            } else {
+                roleId = user.getRoleId();
+            }
+        }
+        user.setRoleId(roleId);
+
+        // 密码：仅当后台显式传值时才覆盖；空值跳过（避免清空）
+        if (StringUtils.hasText(saveDTO.getPassword())) {
+            user.setPassword(passwordEncoder.encode(saveDTO.getPassword()));
+        }
+    }
+
+    private Role findDefaultRole() {
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getRoleCode, DEFAULT_ROLE_CODE);
+        return roleMapper.selectOne(wrapper);
     }
 
     private void checkUsernameUnique(String username, Long currentId) {

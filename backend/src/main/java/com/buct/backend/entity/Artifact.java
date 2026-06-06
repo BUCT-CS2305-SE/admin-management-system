@@ -1,18 +1,15 @@
 package com.buct.backend.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@TableName("artifact")
+/**
+ * 文物 POJO。数据来源：知识图谱子系统（KG）REST API。
+ * id 即 KG 的 object_id（字符串，如 Met02_27.155.7）。
+ */
 public class Artifact {
 
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
+    private String id;
     private String objectId;
     private String title;
     private String period;
@@ -35,11 +32,11 @@ public class Artifact {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

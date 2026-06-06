@@ -7,6 +7,12 @@ public class PlatformUserSaveDTO {
     @NotBlank(message = "用户名不能为空")
     private String username;
 
+    /** 可选；新增时若为空则不设置密码（用户后续无法登录），后台可重置。 */
+    private String password;
+
+    /** 可选；不传时使用默认普通用户角色（NORMAL_USER）。 */
+    private Long roleId;
+
     private String phone;
 
     private String email;
@@ -27,6 +33,22 @@ public class PlatformUserSaveDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
     }
 
     public String getPhone() {

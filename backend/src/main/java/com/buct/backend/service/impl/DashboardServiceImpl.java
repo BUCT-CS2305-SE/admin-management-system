@@ -1,12 +1,13 @@
 package com.buct.backend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.buct.backend.entity.Artifact;
+import com.buct.backend.client.KgArtifactClient;
 import com.buct.backend.entity.UserContent;
-import com.buct.backend.mapper.ArtifactMapper;
 import com.buct.backend.mapper.PlatformUserMapper;
 import com.buct.backend.mapper.UserContentMapper;
 import com.buct.backend.service.DashboardService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,14 +19,16 @@ import java.util.Map;
 @Service
 public class DashboardServiceImpl implements DashboardService {
 
-    private final ArtifactMapper artifactMapper;
+    private static final Logger log = LoggerFactory.getLogger(DashboardServiceImpl.class);
+
+    private final KgArtifactClient kgClient;
     private final PlatformUserMapper platformUserMapper;
     private final UserContentMapper userContentMapper;
 
-    public DashboardServiceImpl(ArtifactMapper artifactMapper,
+    public DashboardServiceImpl(KgArtifactClient kgClient,
                                PlatformUserMapper platformUserMapper,
                                UserContentMapper userContentMapper) {
-        this.artifactMapper = artifactMapper;
+        this.kgClient = kgClient;
         this.platformUserMapper = platformUserMapper;
         this.userContentMapper = userContentMapper;
     }
@@ -34,16 +37,16 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Object> getSummary() {
         Map<String, Object> summary = new HashMap<>();
 
-        Long artifactCount = artifactMapper.selectCount(null);
+        long artifactCount = fetchArtifactTotal();
         Long userCount = platformUserMapper.selectCount(null);
-        
+
         LambdaQueryWrapper<UserContent> pendingWrapper = new LambdaQueryWrapper<>();
         pendingWrapper.eq(UserContent::getAuditStatus, 0);
         Long pendingCount = userContentMapper.selectCount(pendingWrapper);
 
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-        
+
         LambdaQueryWrapper<UserContent> todayWrapper = new LambdaQueryWrapper<>();
         todayWrapper.between(UserContent::getSubmitTime, todayStart, todayEnd);
         Long todayContentCount = userContentMapper.selectCount(todayWrapper);
@@ -59,24 +62,12 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public Map<String, Object> getArtifactStat() {
         Map<String, Object> stat = new HashMap<>();
-
-        LambdaQueryWrapper<Artifact> publishedWrapper = new LambdaQueryWrapper<>();
-        publishedWrapper.eq(Artifact::getAuditStatus, 1);
-        Long publishedCount = artifactMapper.selectCount(publishedWrapper);
-
-        LambdaQueryWrapper<Artifact> pendingWrapper = new LambdaQueryWrapper<>();
-        pendingWrapper.eq(Artifact::getAuditStatus, 0);
-        Long pendingCount = artifactMapper.selectCount(pendingWrapper);
-
-        LambdaQueryWrapper<Artifact> offlineWrapper = new LambdaQueryWrapper<>();
-        offlineWrapper.eq(Artifact::getAuditStatus, 2);
-        Long offlineCount = artifactMapper.selectCount(offlineWrapper);
-
-        stat.put("total", artifactMapper.selectCount(null));
-        stat.put("published", publishedCount);
-        stat.put("pending", pendingCount);
-        stat.put("offline", offlineCount);
-
+        long total = fetchArtifactTotal();
+        // KG 没有 audit_status 概念，全部视为 published
+        stat.put("total", total);
+        stat.put("published", total);
+        stat.put("pending", 0L);
+        stat.put("offline", 0L);
         return stat;
     }
 
@@ -104,5 +95,15 @@ public class DashboardServiceImpl implements DashboardService {
         stat.put("rejected", rejectedCount);
 
         return stat;
+    }
+
+    private long fetchArtifactTotal() {
+        try {
+            Map<String, Object> resp = kgClient.listArtifacts(1, 1, null, null);
+            return KgArtifactClient.readTotal(resp);
+        } catch (Exception e) {
+            log.warn("获取文物总数失败，临时返回 0：{}", e.getMessage());
+            return 0L;
+        }
     }
 }

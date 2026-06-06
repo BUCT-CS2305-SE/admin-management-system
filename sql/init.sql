@@ -86,6 +86,8 @@ DROP TABLE IF EXISTS platform_user;
 CREATE TABLE platform_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     username VARCHAR(100) NOT NULL COMMENT '用户名',
+    password VARCHAR(255) NOT NULL DEFAULT '' COMMENT '密码（BCrypt 哈希）',
+    role_id BIGINT NOT NULL DEFAULT 4 COMMENT '角色ID（默认普通用户）',
     email VARCHAR(100) DEFAULT '' COMMENT '邮箱',
     phone VARCHAR(30) DEFAULT '' COMMENT '手机号',
     avatar VARCHAR(800) DEFAULT '' COMMENT '头像URL',
@@ -97,7 +99,9 @@ CREATE TABLE platform_user (
     comment_banned TINYINT NOT NULL DEFAULT 0 COMMENT '是否禁止评论：0否，1是',
     upload_banned TINYINT NOT NULL DEFAULT 0 COMMENT '是否禁止上传：0否，1是',
     register_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    last_login_time DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    UNIQUE KEY uk_platform_username (username)
 ) COMMENT='平台普通用户表';
 
 DROP TABLE IF EXISTS user_content;
@@ -271,10 +275,11 @@ INSERT INTO artifact(
 );
 
 INSERT INTO platform_user(
-    username, email, phone, avatar, source, status, ban_comment, ban_upload
+    username, password, role_id, email, phone, avatar, source, status, ban_comment, ban_upload
 ) VALUES
-      ('web_user_01', 'webuser01@example.com', '13800000001', '', 'WEB', 1, 0, 0),
-      ('app_user_01', 'appuser01@example.com', '13800000002', '', 'APP', 1, 0, 0);
+      -- password 为 BCrypt('123456')，前端登录用 123456
+      ('web_user_01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 4, 'webuser01@example.com', '13800000001', '', 'WEB', 1, 0, 0),
+      ('app_user_01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 4, 'appuser01@example.com', '13800000002', '', 'APP', 1, 0, 0);
 
 INSERT INTO user_content(
     user_id,

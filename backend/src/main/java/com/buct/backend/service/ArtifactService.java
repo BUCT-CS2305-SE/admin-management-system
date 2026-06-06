@@ -11,13 +11,13 @@ public interface ArtifactService {
 
     PageResult<Artifact> pageArtifacts(ArtifactQueryDTO queryDTO);
 
-    Artifact getArtifactById(Long id);
+    Artifact getArtifactById(String objectId);
 
     void addArtifact(ArtifactSaveDTO saveDTO);
 
-    void updateArtifact(Long id, ArtifactSaveDTO saveDTO);
+    void updateArtifact(String objectId, ArtifactSaveDTO saveDTO);
 
-    void deleteArtifact(Long id);
+    void deleteArtifact(String objectId);
 
     int importArtifacts(List<ArtifactSaveDTO> artifacts);
 

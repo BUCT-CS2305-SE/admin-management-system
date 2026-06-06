@@ -37,9 +37,9 @@ public class ArtifactController {
         return Result.success(artifactService.pageArtifacts(queryDTO));
     }
 
-    @GetMapping("/{id}")
-    public Result<Artifact> getArtifactById(@PathVariable Long id) {
-        return Result.success(artifactService.getArtifactById(id));
+    @GetMapping("/{objectId}")
+    public Result<Artifact> getArtifactById(@PathVariable String objectId) {
+        return Result.success(artifactService.getArtifactById(objectId));
     }
 
     @PostMapping
@@ -62,16 +62,16 @@ public class ArtifactController {
                 .body(content);
     }
 
-    @PutMapping("/{id}")
-    public Result<Void> updateArtifact(@PathVariable Long id,
+    @PutMapping("/{objectId}")
+    public Result<Void> updateArtifact(@PathVariable String objectId,
                                        @Valid @RequestBody ArtifactSaveDTO saveDTO) {
-        artifactService.updateArtifact(id, saveDTO);
+        artifactService.updateArtifact(objectId, saveDTO);
         return Result.success();
     }
 
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteArtifact(@PathVariable Long id) {
-        artifactService.deleteArtifact(id);
+    @DeleteMapping("/{objectId}")
+    public Result<Void> deleteArtifact(@PathVariable String objectId) {
+        artifactService.deleteArtifact(objectId);
         return Result.success();
     }
 }

@@ -1,30 +1,36 @@
 package com.buct.backend.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.buct.backend.client.KgArtifactClient;
 import com.buct.backend.common.BusinessException;
 import com.buct.backend.common.PageResult;
 import com.buct.backend.dto.ArtifactQueryDTO;
 import com.buct.backend.dto.ArtifactSaveDTO;
 import com.buct.backend.entity.Artifact;
-import com.buct.backend.mapper.ArtifactMapper;
 import com.buct.backend.service.ArtifactService;
 import com.buct.backend.service.OperationLogService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * 文物 Service：所有读写都委托给 KG 子系统的 REST API。
+ */
 @Service
 public class ArtifactServiceImpl implements ArtifactService {
 
-    private final ArtifactMapper artifactMapper;
+    private final KgArtifactClient kgClient;
     private final OperationLogService operationLogService;
 
-    public ArtifactServiceImpl(ArtifactMapper artifactMapper, OperationLogService operationLogService) {
-        this.artifactMapper = artifactMapper;
+    public ArtifactServiceImpl(KgArtifactClient kgClient,
+                               OperationLogService operationLogService) {
+        this.kgClient = kgClient;
         this.operationLogService = operationLogService;
     }
 
@@ -33,67 +39,71 @@ public class ArtifactServiceImpl implements ArtifactService {
         long pageNum = normalizePageNum(queryDTO.getPageNum());
         long pageSize = normalizePageSize(queryDTO.getPageSize());
 
-        LambdaQueryWrapper<Artifact> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(StringUtils.hasText(queryDTO.getTitle()), Artifact::getTitle, queryDTO.getTitle())
-                .like(StringUtils.hasText(queryDTO.getObjectId()), Artifact::getObjectId, queryDTO.getObjectId())
-                .like(StringUtils.hasText(queryDTO.getPeriod()), Artifact::getPeriod, queryDTO.getPeriod())
-                .eq(StringUtils.hasText(queryDTO.getType()), Artifact::getType, queryDTO.getType())
-                .like(StringUtils.hasText(queryDTO.getMaterial()), Artifact::getMaterial, queryDTO.getMaterial())
-                .like(StringUtils.hasText(queryDTO.getMuseum()), Artifact::getMuseum, queryDTO.getMuseum())
-                .like(StringUtils.hasText(queryDTO.getLocation()), Artifact::getLocation, queryDTO.getLocation())
-                .eq(queryDTO.getAuditStatus() != null, Artifact::getAuditStatus, queryDTO.getAuditStatus())
-                .eq(queryDTO.getKgSyncStatus() != null, Artifact::getKgSyncStatus, queryDTO.getKgSyncStatus())
-                .orderByDesc(Artifact::getUpdateTime)
-                .orderByDesc(Artifact::getId);
+        Map<String, Object> resp = kgClient.listArtifacts(
+                pageNum, pageSize, queryDTO.getType(), queryDTO.getMuseum());
 
-        IPage<Artifact> page = artifactMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
-        return PageResult.of(page.getRecords(), page.getTotal(), pageNum, pageSize);
+        List<Map<String, Object>> data = KgArtifactClient.readDataList(resp);
+        // 客户端侧过滤 title / objectId / period / material / location（KG 列表接口不支持这些条件）
+        List<Map<String, Object>> filtered = new ArrayList<>();
+        for (Map<String, Object> raw : data) {
+            Map<String, Object> item = KgArtifactClient.toAdminListItem(raw);
+            if (!matchesLocalFilter(item, queryDTO)) {
+                continue;
+            }
+            filtered.add(item);
+        }
+
+        List<Artifact> records = new ArrayList<>(filtered.size());
+        for (Map<String, Object> item : filtered) {
+            records.add(mapToArtifact(item));
+        }
+
+        long total = KgArtifactClient.readTotal(resp);
+        return PageResult.of(records, total, pageNum, pageSize);
     }
 
     @Override
-    public Artifact getArtifactById(Long id) {
-        Artifact artifact = artifactMapper.selectById(id);
-        if (artifact == null) {
+    public Artifact getArtifactById(String objectId) {
+        if (!StringUtils.hasText(objectId)) {
+            throw new BusinessException("文物 ID 不能为空");
+        }
+        Map<String, Object> resp = kgClient.getArtifactDetail(objectId);
+        if (resp == null) {
             throw new BusinessException("文物不存在");
         }
-        return artifact;
+        return mapToArtifact(KgArtifactClient.toAdminDetail(resp));
     }
 
     @Override
     public void addArtifact(ArtifactSaveDTO saveDTO) {
-        checkObjectIdUnique(saveDTO.getObjectId(), null);
-
-        Artifact artifact = new Artifact();
-        BeanUtils.copyProperties(saveDTO, artifact);
-        fillDefaultStatus(artifact);
-        artifactMapper.insert(artifact);
-        operationLogService.record("文物数据管理", "新增文物", "artifact", String.valueOf(artifact.getId()), null, artifact.getObjectId());
+        Map<String, Object> camel = beanToMap(saveDTO);
+        Map<String, Object> payload = KgArtifactClient.toKgWritePayload(saveDTO.getObjectId(), camel);
+        kgClient.createArtifact(payload);
+        operationLogService.record("文物数据管理", "新增文物", "artifact",
+                saveDTO.getObjectId(), null, saveDTO.getObjectId());
     }
 
     @Override
-    public void updateArtifact(Long id, ArtifactSaveDTO saveDTO) {
-        Artifact existing = artifactMapper.selectById(id);
-        if (existing == null) {
-            throw new BusinessException("文物不存在，无法修改");
+    public void updateArtifact(String objectId, ArtifactSaveDTO saveDTO) {
+        if (!StringUtils.hasText(objectId)) {
+            throw new BusinessException("文物 ID 不能为空");
         }
-        checkObjectIdUnique(saveDTO.getObjectId(), id);
-
-        Artifact artifact = new Artifact();
-        BeanUtils.copyProperties(saveDTO, artifact);
-        artifact.setId(id);
-        fillDefaultStatus(artifact);
-        artifactMapper.updateById(artifact);
-        operationLogService.record("文物数据管理", "修改文物", "artifact", String.valueOf(id), existing.getObjectId(), artifact.getObjectId());
+        Map<String, Object> camel = beanToMap(saveDTO);
+        Map<String, Object> payload = KgArtifactClient.toKgWritePayload(objectId, camel);
+        // 写接口不需要 object_id 在 body 里也行，但带上无害
+        kgClient.updateArtifact(objectId, payload);
+        operationLogService.record("文物数据管理", "修改文物", "artifact",
+                objectId, objectId, saveDTO.getObjectId());
     }
 
     @Override
-    public void deleteArtifact(Long id) {
-        Artifact existing = artifactMapper.selectById(id);
-        if (existing == null) {
-            throw new BusinessException("文物不存在，无法删除");
+    public void deleteArtifact(String objectId) {
+        if (!StringUtils.hasText(objectId)) {
+            throw new BusinessException("文物 ID 不能为空");
         }
-        artifactMapper.deleteById(id);
-        operationLogService.record("文物数据管理", "删除文物", "artifact", String.valueOf(id), existing.getObjectId(), null);
+        kgClient.deleteArtifact(objectId);
+        operationLogService.record("文物数据管理", "删除文物", "artifact",
+                objectId, objectId, null);
     }
 
     @Override
@@ -106,15 +116,24 @@ public class ArtifactServiceImpl implements ArtifactService {
             addArtifact(artifact);
             count++;
         }
-        operationLogService.record("文物数据管理", "批量导入文物", "artifact", "batch", null, "count=" + count);
+        operationLogService.record("文物数据管理", "批量导入文物", "artifact",
+                "batch", null, "count=" + count);
         return count;
     }
 
     @Override
     public String exportArtifactsCsv(ArtifactQueryDTO queryDTO) {
-        queryDTO.setPageNum(1L);
-        queryDTO.setPageSize(100L);
-        List<Artifact> artifacts = pageArtifacts(queryDTO).getRecords();
+        ArtifactQueryDTO q = new ArtifactQueryDTO();
+        q.setPageNum(1L);
+        q.setPageSize(100L);
+        q.setTitle(queryDTO.getTitle());
+        q.setObjectId(queryDTO.getObjectId());
+        q.setPeriod(queryDTO.getPeriod());
+        q.setType(queryDTO.getType());
+        q.setMaterial(queryDTO.getMaterial());
+        q.setMuseum(queryDTO.getMuseum());
+        q.setLocation(queryDTO.getLocation());
+        List<Artifact> artifacts = pageArtifacts(q).getRecords();
 
         StringBuilder csv = new StringBuilder();
         csv.append("id,objectId,title,period,type,material,museum,location,auditStatus,kgSyncStatus,crawlDate\n");
@@ -131,27 +150,96 @@ public class ArtifactServiceImpl implements ArtifactService {
                     .append(value(artifact.getKgSyncStatus())).append(',')
                     .append(value(artifact.getCrawlDate())).append('\n');
         }
-        operationLogService.record("文物数据管理", "导出文物CSV", "artifact", "export", null, "count=" + artifacts.size());
+        operationLogService.record("文物数据管理", "导出文物CSV", "artifact",
+                "export", null, "count=" + artifacts.size());
         return csv.toString();
     }
 
-    private void checkObjectIdUnique(String objectId, Long currentId) {
-        LambdaQueryWrapper<Artifact> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Artifact::getObjectId, objectId)
-                .ne(currentId != null, Artifact::getId, currentId);
-        Long count = artifactMapper.selectCount(wrapper);
-        if (count != null && count > 0) {
-            throw new BusinessException("文物唯一标识符已存在");
+    // ---------- helpers ----------
+
+    private boolean matchesLocalFilter(Map<String, Object> item, ArtifactQueryDTO q) {
+        if (StringUtils.hasText(q.getTitle())
+                && !contains(item.get("title"), q.getTitle())) {
+            return false;
         }
+        if (StringUtils.hasText(q.getObjectId())
+                && !contains(item.get("objectId"), q.getObjectId())) {
+            return false;
+        }
+        if (StringUtils.hasText(q.getPeriod())
+                && !contains(item.get("period"), q.getPeriod())) {
+            return false;
+        }
+        if (StringUtils.hasText(q.getMaterial())
+                && !contains(item.get("material"), q.getMaterial())) {
+            return false;
+        }
+        if (StringUtils.hasText(q.getLocation())
+                && !contains(item.get("location"), q.getLocation())) {
+            return false;
+        }
+        return true;
     }
 
-    private void fillDefaultStatus(Artifact artifact) {
-        if (artifact.getAuditStatus() == null) {
-            artifact.setAuditStatus(1);
+    private boolean contains(Object value, String keyword) {
+        if (value == null) return false;
+        return String.valueOf(value).toLowerCase().contains(keyword.toLowerCase());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Artifact mapToArtifact(Map<String, Object> item) {
+        Artifact a = new Artifact();
+        a.setId(asString(item.get("id")));
+        a.setObjectId(asString(item.get("objectId")));
+        a.setTitle(asString(item.get("title")));
+        a.setPeriod(asString(item.get("period")));
+        a.setType(asString(item.get("type")));
+        a.setMaterial(asString(item.get("material")));
+        a.setDescription(asString(item.get("description")));
+        a.setDimensions(asString(item.get("dimensions")));
+        a.setMuseum(asString(item.get("museum")));
+        a.setLocation(asString(item.get("location")));
+        a.setDetailUrl(asString(item.get("detailUrl")));
+        a.setImageUrl(asString(item.get("imageUrl")));
+        a.setImagePath(asString(item.get("imagePath")));
+        a.setCreditLine(asString(item.get("creditLine")));
+        a.setAccessionNumber(asString(item.get("accessionNumber")));
+        Object crawl = item.get("crawlDate");
+        if (crawl instanceof String s && !s.isBlank()) {
+            try {
+                a.setCrawlDate(LocalDate.parse(s.length() >= 10 ? s.substring(0, 10) : s));
+            } catch (Exception ignored) {
+            }
         }
-        if (artifact.getKgSyncStatus() == null) {
-            artifact.setKgSyncStatus(0);
+        Object audit = item.get("auditStatus");
+        if (audit instanceof Number n) a.setAuditStatus(n.intValue());
+        Object sync = item.get("kgSyncStatus");
+        if (sync instanceof Number n) a.setKgSyncStatus(n.intValue());
+        return a;
+    }
+
+    private static String asString(Object v) {
+        return v == null ? null : String.valueOf(v);
+    }
+
+    /** Bean → Map（camelCase）。仅用于把 DTO 里非空字段透传给 KG client。 */
+    private static Map<String, Object> beanToMap(Object bean) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            for (PropertyDescriptor pd : java.beans.Introspector
+                    .getBeanInfo(bean.getClass(), Object.class)
+                    .getPropertyDescriptors()) {
+                Method reader = pd.getReadMethod();
+                if (reader == null) continue;
+                Object value = reader.invoke(bean);
+                if (value != null) {
+                    map.put(pd.getName(), value);
+                }
+            }
+        } catch (Exception e) {
+            throw new BusinessException("参数解析失败：" + e.getMessage());
         }
+        return map;
     }
 
     private long normalizePageNum(Long pageNum) {

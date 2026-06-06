@@ -81,6 +81,13 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function escapeJsString(value) {
+  return String(value ?? "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'")
+    .replaceAll("\"", "\\\"");
+}
+
 function fmt(value) {
   if (!value) return "-";
   return String(value).replace("T", " ").slice(0, 19);
@@ -262,16 +269,16 @@ async function loadArtifacts() {
   $("#artifactTotal").textContent = `共 ${data.total ?? 0} 条`;
   $("#artifactTable").innerHTML = records(data).map((item) => `
     <tr>
-      <td>${item.id}</td>
+      <td>${escapeHtml(item.id)}</td>
       <td><strong>${escapeHtml(item.title)}</strong><br><span class="hint">${escapeHtml(item.objectId)}</span></td>
       <td>${escapeHtml(item.period)}</td>
       <td>${escapeHtml(item.type)}</td>
       <td>${escapeHtml(item.museum)}</td>
       <td>${badge(item.auditStatus, {0: "待审核", 1: "发布", 2: "下架"})} ${badge(item.kgSyncStatus, {0: "未同步", 1: "已同步", 2: "同步失败"})}</td>
       <td class="actions">
-        <button onclick="viewArtifact(${item.id})">详情</button>
-        <button onclick="openArtifactEdit(${item.id})">编辑</button>
-        <button class="secondary" onclick="deleteArtifact(${item.id})">删除</button>
+        <button onclick="viewArtifact('${escapeJsString(item.id)}')">详情</button>
+        <button onclick="openArtifactEdit('${escapeJsString(item.id)}')">编辑</button>
+        <button class="secondary" onclick="deleteArtifact('${escapeJsString(item.id)}')">删除</button>
       </td>
     </tr>
   `).join("") || `<tr><td colspan="7">暂无文物数据</td></tr>`;
