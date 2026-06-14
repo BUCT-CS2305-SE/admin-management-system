@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.buct.backend.mapper.OperationLogMapper">
+
+    <select id="selectByConditions" resultType="com.buct.backend.entity.OperationLog">
+        SELECT * FROM operation_log
+        WHERE 1=1
+        <if test="adminUsername != null and adminUsername != ''">
+            AND admin_username LIKE CONCAT('%', #{adminUsername}, '%')
+        </if>
+        <if test="moduleName != null and moduleName != ''">
+            AND module_name LIKE CONCAT('%', #{moduleName}, '%')
+        </if>
+        <if test="operationType != null and operationType != ''">
+            AND operation_type LIKE CONCAT('%', #{operationType}, '%')
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                target_type LIKE CONCAT('%', #{keyword}, '%')
+                OR target_id LIKE CONCAT('%', #{keyword}, '%')
+                OR before_data LIKE CONCAT('%', #{keyword}, '%')
+                OR after_data LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="startTime != null">
+            AND operation_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND operation_time &lt;= #{endTime}
+        </if>
+        ORDER BY operation_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByConditions" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM operation_log
+        WHERE 1=1
+        <if test="adminUsername != null and adminUsername != ''">
+            AND admin_username LIKE CONCAT('%', #{adminUsername}, '%')
+        </if>
+        <if test="moduleName != null and moduleName != ''">
+            AND module_name LIKE CONCAT('%', #{moduleName}, '%')
+        </if>
+        <if test="operationType != null and operationType != ''">
+            AND operation_type LIKE CONCAT('%', #{operationType}, '%')
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                target_type LIKE CONCAT('%', #{keyword}, '%')
+                OR target_id LIKE CONCAT('%', #{keyword}, '%')
+                OR before_data LIKE CONCAT('%', #{keyword}, '%')
+                OR after_data LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="startTime != null">
+            AND operation_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND operation_time &lt;= #{endTime}
+        </if>
+    </select>
+
+</mapper>

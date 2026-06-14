@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: admin-management-system
+  
+  servlet:
+    encoding:
+      enabled: true
+      force: true
+      charset: UTF-8
+  
+  mvc:
+    charset: UTF-8
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/admin_management_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: "Buct@2025"
+
+kg:
+  base-url: https://se-cs2305.yazs.top
+  connect-timeout-ms: 5000
+  read-timeout-ms: 15000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+logging:
+  level:
+    com.buct.backend: debug
